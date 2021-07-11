@@ -1,7 +1,4 @@
-from src.data_structures.core.transaction import Transaction
-from web3.exceptions import ABIEventFunctionNotFound, MismatchedABI
-
-from src.utils.constants import TRICRYPTO_LP_TOKEN_ADDR
+from src.core.transaction import Transaction
 from src.utils.exceptions import IncorrectContractException
 
 
@@ -13,7 +10,7 @@ class AddLiquidityTransaction(Transaction):
         self.minted_lp_tokens = 0
         self.get_minted_lp_tokens()
 
-    def get_minted_lp_tokens(self):
+    def __get_minted_lp_tokens(self):
 
         if self.logs_are_processed:
             return self.minted_lp_tokens
@@ -23,27 +20,6 @@ class AddLiquidityTransaction(Transaction):
         except IncorrectContractException:
             self.__minted_lp_tokens_pool_contract()
         self.logs_are_processed = True
-
-    def __minted_lp_tokens_deposit_contract(self):
-
-        log_to_process = self.tx_receipt["logs"][2]
-        try:
-            processed_log = TRICRYPTO_LP_TOKEN_ADDR.events.Transfer().processLog(log_to_process)
-        except Exception as e:
-            raise IncorrectContractException
-
-        self.minted_lp_tokens = processed_log["args"]["_value"]
-
-    def __minted_lp_tokens_pool_contract(self):
-
-        log_to_process = self.tx_receipt["logs"][1]
-        try:
-            processed_log = (
-                TRICRYPTO_LP_TOKEN_ADDR.events.Transfer().processLog(log_to_process)
-            )
-        except (ABIEventFunctionNotFound, MismatchedABI):
-            raise IncorrectContractException
-        self.minted_lp_tokens = processed_log["args"]["_value"]
 
 
 def main():

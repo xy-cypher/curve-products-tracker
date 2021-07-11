@@ -33,13 +33,6 @@ class Transaction:
         # method names from tx input if tx is contract interaction:
         self.decoded_tx_input = None
         self.method_name = None
-        self.contract_interacted_with = None
-        if address_is_contract(self.to_address):
-            self.contract_interacted_with = init_contract(address=self.to_address)
-            self.decoded_tx_input = self.contract_interacted_with.decode_function_input(
-                self.tx_data.input
-            )
-            self.method_name = self.decoded_tx_input[0].__dict__["abi"]["name"]
 
         # tx logs:
         self.tx_receipt: TxReceipt = w3_infura.eth.get_transaction_receipt(self.tx_hash)

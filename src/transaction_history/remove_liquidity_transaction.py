@@ -1,4 +1,4 @@
-from src.data_structures.core.transaction import Transaction
+from src.core.transaction import Transaction
 from src.utils.constants import TRICRYPTO_LP_TOKEN_ADDR
 from src.utils.exceptions import IncorrectContractException
 
