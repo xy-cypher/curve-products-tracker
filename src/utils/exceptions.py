@@ -1,0 +1,2 @@
+class IncorrectContractException(Exception):
+    pass
