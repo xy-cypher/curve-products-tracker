@@ -1,10 +1,10 @@
 import os
 
-from web3 import Web3
+import web3
 
 
-w3_infura = Web3(
-    Web3.HTTPProvider(
+w3_infura = web3.Web3(
+    web3.Web3.HTTPProvider(
         f"https://mainnet.infura.io/v3/{os.environ['WEB3_INFURA_PROJECT_ID']}"
     )
 )
@@ -37,6 +37,3 @@ def parse_value(val):
         return val.hex()
     else:
         return val
-
-
-
