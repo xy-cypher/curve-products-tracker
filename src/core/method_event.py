@@ -19,3 +19,14 @@ class EventMethod:
         # TODO: Add generic decoding log logic here ...
 
         pass
+
+
+def main():
+
+    # TODO: add some example here so testing and dev is easier.
+
+    pass
+
+
+if __name__ == "__main__":
+    main()

@@ -22,3 +22,14 @@ class ContractMethod:
             decoded_event_logs.append(decoded_event_log)
 
         return decoded_event_logs
+
+
+def main():
+
+    # TODO: Add an example of a transaction via a contract method here
+    tx_hash_str = "0xd557732dc9c2065140ddfe75c7b7dae8a4b9aaa95e628f199ed4938a1350b769"
+
+
+
+if __name__ == "__main__":
+    main()

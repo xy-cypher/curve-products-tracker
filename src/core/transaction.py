@@ -9,7 +9,6 @@ from hexbytes import HexBytes
 
 from eth_typing import Hash32, HexStr
 
-from src.utils.contract_utils import address_is_contract, init_contract
 from src.utils.misc_utils import w3_infura, to_dict
 
 
@@ -30,15 +29,8 @@ class Transaction:
         self.from_address = self.tx_data["from"]
         self.to_address = self.tx_data["to"]
 
-        # method names from tx input if tx is contract interaction:
-        self.decoded_tx_input = None
-        self.method_name = None
-
         # tx logs:
         self.tx_receipt: TxReceipt = w3_infura.eth.get_transaction_receipt(self.tx_hash)
-
-        # book-keeping:
-        self.logs_are_processed = False
 
     @property
     def __parsed_dict__(self):
