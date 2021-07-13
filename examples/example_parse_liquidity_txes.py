@@ -3,8 +3,8 @@ import json
 from src.core.contract_transaction import ContractTransaction
 from src.core.method_event import SubContractEvent
 from src.core.transaction import Transaction
-from src.utils.constants import TRICRYPTO_LP_TOKEN
-from src.utils.constants import TRICRYPTO_POOL_CONTRACT
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_LP_TOKEN
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_POOL_CONTRACT
 
 
 def main():
