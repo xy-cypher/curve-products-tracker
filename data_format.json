@@ -1,0 +1,126 @@
+{
+  "added_liquidity": {
+    "06 July, 2021 19:23:57 UTC": {
+      "hash": "0x22787141b6488b49c42bde861adf7d82de8b6d8a5a478e6f8213127f15f95186",
+      "num_tokens": {
+        "USDT": 0.0,
+        "WBTC": 8.13786476,
+        "ETH": 83.17869696000001
+      },
+      "coingecko_prices": {
+        "USDT": 1.003829993413279,
+        "WBTC": 33952.28107081836,
+        "ETH": 2217.3018530598792
+      },
+      "token_values": {
+        "USDT": 0.0,
+        "WBTC": 276299.0716478278,
+        "ETH": 184432.27890451415
+      },
+      "lp_tokens": 362.37596400743655,
+      "block_number": "12775750",
+      "transaction_fees_eth": 0.01229367
+    },
+    "06 July, 2021 19:23:59 UTC": {
+      "hash": "0x22787141b6488b49c42bde861adf7d82de8b6d8a5a478e6f8213127f15f95186",
+      "num_tokens": {
+        "USDT": 0.0,
+        "WBTC": 8.13786476,
+        "ETH": 83.17869696000001
+      },
+      "coingecko_prices": {
+        "USDT": 1.003829993413279,
+        "WBTC": 33952.28107081836,
+        "ETH": 2217.3018530598792
+      },
+      "token_values": {
+        "USDT": 0.0,
+        "WBTC": 276299.0716478278,
+        "ETH": 184432.27890451415
+      },
+      "lp_tokens": 362.37596400743655,
+      "block_number": "12775750",
+      "transaction_fees_eth": 0.01229367
+    }
+  },
+  "removed_liquidity": {
+    "07 July, 2021 22:09:14 UTC": {
+      "hash": "0xcba9ade7197c221a6de26e6d46141906d04c7856e916b7ec510a3f375781f509",
+      "num_tokens": {
+        "USDT": 235549.564358,
+        "WBTC": 0,
+        "ETH": 0
+      },
+      "coingecko_prices": {
+        "USDT": 1.0025265590774224,
+        "WBTC": 34167.305179719544,
+        "ETH": 2320.6549288317
+      },
+      "token_values": {
+        "USDT": 236144.6942480116,
+        "WBTC": 0.0,
+        "ETH": 0.0
+      },
+      "lp_tokens_burned": 181.185,
+      "block_number": "12782908",
+      "transaction_fees_eth": 0.006616036
+    },
+    "07 July, 2021 23:09:14 UTC": {
+      "hash": "0xcba9ade7197c221a6de26e6d46141906d04c7856e916b7ec510a3f375781f509",
+      "num_tokens": {
+        "USDT": 235549.564358,
+        "WBTC": 0,
+        "ETH": 0
+      },
+      "coingecko_prices": {
+        "USDT": 1.0025265590774224,
+        "WBTC": 34167.305179719544,
+        "ETH": 2320.6549288317
+      },
+      "token_values": {
+        "USDT": 236144.6942480116,
+        "WBTC": 0.0,
+        "ETH": 0.0
+      },
+      "lp_tokens_burned": 181.185,
+      "block_number": "12782908",
+      "transaction_fees_eth": 0.006616036
+    }
+  },
+  "current_position": {
+    "09 July, 2021 15:34:11 UTC": {
+      "USDT": {
+        "num_tokens": 228304.64416,
+        "value_tokens_usd": 228304.64416,
+        "coingecko_price_usd": 1.0
+      },
+      "WBTC": {
+        "num_tokens": 6.80257501,
+        "value_tokens_usd": 228422.99413448936,
+        "coingecko_price_usd": 33644
+      },
+      "ETH": {
+        "num_tokens": 104.99417704246804,
+        "value_tokens_usd": 228412.35327518414,
+        "coingecko_price_usd": 2179.24
+      }
+    }
+  },
+  "outstanding_rewards": {
+    "09 July, 2021 15:34:11 UTC": {
+      "CVX": 10.50,
+      "CRV": 150.20
+    }
+  },
+  "claimed_rewards": {
+    "09 June, 2021 15:34:11 UTC": {
+      "CVX": 1.5,
+      "CRV": 10.20
+    }
+  },
+  "earned_fees": {
+    "block_start": 100,
+    "block_end": 200,
+    "fees_earned_eth": 0.005
+  }
+}
