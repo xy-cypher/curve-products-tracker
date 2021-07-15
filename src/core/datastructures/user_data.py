@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.core.datastructures.current_position import CurrentPosition
-from src.core.datastructures.liquidity_transactions import HistoricalTransactions
+from src.core.datastructures.pool_transactions import HistoricalTransactions
 
 
 @dataclass

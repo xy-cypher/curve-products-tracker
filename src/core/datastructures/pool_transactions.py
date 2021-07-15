@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 from typing import Optional
 
-from src.core.datastructures.rewards import Rewards
+from src.core.datastructures.rewards import ClaimedReward
 from src.core.datastructures.tokens import Token
 
 
@@ -22,5 +22,5 @@ class LiquidityTransactions:
 @dataclass
 class HistoricalTransactions:
 
-    claimed_rewards: Rewards
+    claimed_rewards: List[ClaimedReward]
     liquidity_transactions: Optional[LiquidityTransactions]

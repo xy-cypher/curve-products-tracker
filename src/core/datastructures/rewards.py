@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List
 
 from src.core.datastructures.coingecko_price import CoinGeckoPrice
@@ -12,8 +13,10 @@ class Rewards:
 
 
 @dataclass
-class ClaimedRewards:
-    rewards: List[Rewards]
+class ClaimedReward:
+
+    date: datetime.datetime
+    rewards: Rewards
 
 
 @dataclass
