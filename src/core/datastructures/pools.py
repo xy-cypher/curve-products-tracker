@@ -3,10 +3,11 @@ from typing import List
 from typing import Optional
 
 from src.core.datastructures.current_position import CurrentPosition
+from src.core.datastructures.defaults import NoneRefersDefault
 
 
 @dataclass
-class Pool:
+class Pool(NoneRefersDefault):
 
     name: str
     contract_address: str
@@ -14,6 +15,6 @@ class Pool:
 
 
 @dataclass
-class Pools:
+class Pools(NoneRefersDefault):
 
     pool: List[Pool]

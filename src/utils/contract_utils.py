@@ -22,7 +22,8 @@ def init_contract(address: str):
 
     try:
         contract = Contract(address_or_alias=address)
-    except:  # TODO: exception handling
+    except Exception as e:  # TODO: exception handling
+        print(e)
         contract = Contract.from_explorer(address=address)
 
     return contract

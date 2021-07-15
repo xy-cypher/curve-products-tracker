@@ -3,12 +3,13 @@ from dataclasses import dataclass
 from typing import List
 from typing import Optional
 
+from src.core.datastructures.defaults import NoneRefersDefault
 from src.core.datastructures.rewards import ClaimedReward
 from src.core.datastructures.tokens import Token
 
 
 @dataclass
-class LiquidityTransactions:
+class LiquidityTransactions(NoneRefersDefault):
 
     date: datetime.datetime
     contract_function: str
@@ -20,7 +21,7 @@ class LiquidityTransactions:
 
 
 @dataclass
-class HistoricalTransactions:
+class HistoricalTransactions(NoneRefersDefault):
 
     claimed_rewards: List[ClaimedReward]
     liquidity_transactions: Optional[LiquidityTransactions]

@@ -1,17 +1,19 @@
 from datetime import datetime
+from typing import Optional
+from typing import Tuple
 
 from brownie import network
 from brownie.network.contract import Contract
-from brownie.network.transaction import ContractNotFound
-from brownie.network.transaction import TransactionNotFound
-from brownie.network.transaction import TransactionReceipt
 
+from src.core.datastructures.coingecko_price import CoinGeckoPrice
+from src.core.datastructures.current_position import CurrentPosition
+from src.core.datastructures.fees import PoolFees
+from src.core.datastructures.tokens import Token
 from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_CONVEX_GAUGE
 from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_CURVE_GAUGE
 from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_LP_TOKEN
 from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_POOL_CONTRACT
 from src.utils.coingecko_utils import get_prices_of_coins
-from src.utils.constants import STRFTIME_FORMAT
 from src.utils.contract_utils import init_contract
 
 
@@ -26,87 +28,92 @@ class CurrentPositionCalculator:
         self.pool_contract = Contract.from_explorer(TRICRYPTO_POOL_CONTRACT)
         self.pool_token_contract = Contract.from_explorer(TRICRYPTO_LP_TOKEN)
 
+        self.pool_token_tickers = ["USDT", "WBTC", "ETH"]
+
     def get_current_position(self, user_address: str, currency: str = "usd"):
 
-        gauge_bal_convex = self.__get_convex_gauge_bal(user_address)
-        gauge_bal_curve = self.__get_curve_gauge_bal(user_address)
-        lp_token_bal = self.__get_lp_token_bal(user_address)
-        gauge_bal = gauge_bal_convex + gauge_bal_curve
-        token_balance_to_calc_on = gauge_bal + lp_token_bal
-
         time_now = datetime.utcnow()
-        time_now_str = time_now.strftime(STRFTIME_FORMAT)
+        lp_token_balance, gauge_balance = self.get_token_and_gauge_bal(
+            user_address=user_address
+        )
+        token_balance_to_calc_on = lp_token_balance + gauge_balance
 
-        # we calculate position on the following token balance
-        # (tokens in gauge + free lp tokens)
         if not token_balance_to_calc_on:
-            return {time_now: {}}
+            return None
 
         token_prices_coingecko = get_prices_of_coins(currency=currency)
+        current_position_of_tokens = []
+        for i in range(len(self.pool_token_tickers)):
 
-        # calculating position of coins in LP:
-        # TODO: currently the following is hardcoded to tricrypto.
-        #  make it more flexible.
-        # this will ensure that the code is prepared for other curve v2
-        token_names = ["USDT", "WBTC", "ETH"]
-        final_positions = {}
-        for i in range(len(token_names)):
-
-            _token = init_contract(
-                self.token_contract(i, tricrypto_contract=self.pool_contract)
-            )
-            _token_decimals = _token.functions.decimals().call()
-            _price = 1
-            price_from_curve_oracle = _price
-            if token_names[i] not in ["USDT"]:
-                price_from_curve_oracle = self.price_oracle(
+            token_contract = init_contract(self.pool_contract.functions.coins(i).call())
+            token_decimals = token_contract.functions.decimals().call()
+            oracle_price = 1
+            if self.pool_token_tickers[i] != "USDT":
+                price_oracle = self.pool_contract.functions.price_oracle(i)
+                price_from_curve_oracle = price_oracle.call()(
                     token_index=i - 1, tricrypto_contract=self.pool_contract
                 )
-                _price = price_from_curve_oracle / 10 ** 18  # 18 digit precision
+                oracle_price = price_from_curve_oracle * 1e-18
 
-            _coins = (
-                self.calc_withdraw_one_coin(
-                    token_balance_to_calc_on, i, tricrypto_contract=self.pool_contract
-                )
-                / 10 ** _token_decimals
+            num_tokens = (
+                self.pool_contract.functions.calc_withdraw_one_coin(
+                    token_balance_to_calc_on, i
+                ).call()
+                / 10 ** token_decimals
             )
-            _val = _coins * _price
-            position_data = {
-                "token_contract_address": _token.address,
-                "curve_oracle_price_usd": _price,
-                "num_tokens": _coins,
-                "value_tokens_usd": _val,
-                "coingecko_price": {
-                    currency: token_prices_coingecko[currency][token_names[i]]
-                },
-            }
-            final_positions[token_names[i]] = position_data
 
-        timestamped_output = {time_now: final_positions}
+            value_tokens = num_tokens * oracle_price
 
-        return timestamped_output
+            current_position_of_tokens.append(
+                Token(
+                    token=self.pool_token_tickers[i],
+                    num_tokens=num_tokens,
+                    value_tokens=value_tokens,
+                    coingecko_price=CoinGeckoPrice(
+                        currency=currency,
+                        quote=token_prices_coingecko[self.pool_token_tickers[i]],
+                    ),
+                )
+            )
 
-    def get_curve_gauge_bal(self, address: str):
-        contract = init_contract(self.curve_gauge_contracts)
-        return contract.functions.balanceOf(address).call()
+        accrued_fees = self.calculate_accrued_fees(user_address=user_address)
+        outstanding_rewards = self.calculate_outstanding_rewards(user_address)
 
-    def get_convex_gauge_bal(self, address: str):
-        contract = init_contract(self.convex_gauge_contracts)
-        return contract.functions.balanceOf(address).call()
+        position_data = CurrentPosition(
+            time=time_now,
+            lp_tokens=lp_token_balance,
+            gauge_tokens=gauge_balance,
+            accrued_fees=accrued_fees,
+            tokens=current_position_of_tokens,
+            outstanding_rewards=outstanding_rewards,
+        )
 
-    def get_lp_token_bal(self, address: str):
-        contract = init_contract(self.pool_token_contract)
-        return contract.functions.balanceOf(address).call()
+        return position_data
 
-    def calc_withdraw_one_coin(
-        self, balance: int, token_index: int, tricrypto_contract
-    ):
-        return tricrypto_contract.functions.calc_withdraw_one_coin(
-            balance, token_index
+    def get_token_and_gauge_bal(self, user_address: str) -> Tuple[float, float]:
+        """We calculate position on the following token balance:
+        (tokens in gauge + free lp tokens)
+
+        :param user_address: web3 address of the user
+        :return:
+        """
+
+        gauge_balance_convex = self.convex_gauge_contracts.functions.balanceOf(
+            user_address
         ).call()
+        gauge_balance_curve = self.curve_gauge_contracts.functions.balanceOf(
+            user_address
+        ).call()
+        pool_token_balance = self.pool_token_contract.functions.balanceOf(
+            user_address
+        ).call()
+        total_gauge_balance = gauge_balance_convex + gauge_balance_curve
+        return total_gauge_balance, pool_token_balance
 
-    def price_oracle(self, token_index: int, tricrypto_contract):
-        return tricrypto_contract.functions.price_oracle(token_index).call()
+    def calculate_accrued_fees(self, user_address: str) -> Optional[PoolFees]:
+        # TODO: calc fees
+        return None
 
-    def token_contract(self, token_index: int, tricrypto_contract):
-        return tricrypto_contract.functions.coins(token_index).call()
+    def calculate_outstanding_rewards(self, user_address: str) -> Optional[PoolFees]:
+        # TODO: calc fees
+        return None
