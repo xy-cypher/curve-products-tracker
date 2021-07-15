@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 from src.core.datastructures.coingecko_price import CoinGeckoPrice
 
