@@ -1,22 +1,30 @@
 import os
 
+from brownie import network
+from brownie.network.contract import Contract
+from brownie.network.contract import ContractNotFound
 from etherscan.accounts import Account
 from etherscan.client import Client
-from etherscan.contracts import Contract as EtherscanContract
 from hexbytes import HexBytes
 from web3 import Web3
 
+from src.utils.exceptions import NetworkNotConnected
 from src.utils.misc_utils import w3_infura
 
 
 def init_contract(address: str):
 
-    address = Web3.toChecksumAddress(address)
-    contract_abi = EtherscanContract(
-        address=address,
-        api_key=os.environ["ETHERSCAN_API_KEY"],
-    ).get_abi()
-    contract = w3_infura.eth.contract(address=address, abi=contract_abi)
+    if not network.is_connected():
+        raise NetworkNotConnected
+
+    if not address_is_contract(address):
+        raise ContractNotFound
+
+    try:
+        contract = Contract(address_or_alias=address)
+    except:  # TODO: exception handling
+        contract = Contract.from_explorer(address=address)
+
     return contract
 
 
