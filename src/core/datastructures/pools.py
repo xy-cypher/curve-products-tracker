@@ -1,6 +1,7 @@
-from dataclasses import dataclass
 from typing import List
 from typing import Optional
+
+from marshmallow_dataclass import dataclass
 
 from src.core.datastructures.current_position import CurrentPosition
 from src.core.datastructures.defaults import NoneRefersDefault

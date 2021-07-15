@@ -1,7 +1,8 @@
-from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 from typing import Optional
+
+from marshmallow_dataclass import dataclass
 
 from src.core.datastructures.defaults import NoneRefersDefault
 from src.core.datastructures.fees import PoolFees

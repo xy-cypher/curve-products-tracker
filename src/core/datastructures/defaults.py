@@ -1,7 +1,8 @@
 # borrowed from https://stackoverflow.com/a/58081120
-from dataclasses import dataclass
 from dataclasses import fields
 from typing import Any
+
+from marshmallow_dataclass import dataclass
 
 
 @dataclass
