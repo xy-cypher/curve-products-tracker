@@ -1,11 +1,11 @@
 from marshmallow_dataclass import dataclass
 
-from src.core.datastructures.defaults import NoneRefersDefault
+from src.core.datastructures.base import BaseDataStruct
 
 
 @dataclass
-class PoolFees(NoneRefersDefault):
+class PoolFees(BaseDataStruct):
 
-    accrued_fees: float
-    block_start: int
-    block_end: int
+    accrued_fees: float = 0
+    block_start: int = 0
+    block_end: int = 0

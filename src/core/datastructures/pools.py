@@ -1,21 +1,21 @@
+from dataclasses import field
 from typing import List
-from typing import Optional
 
 from marshmallow_dataclass import dataclass
 
+from src.core.datastructures.base import BaseDataStruct
 from src.core.datastructures.current_position import CurrentPosition
-from src.core.datastructures.defaults import NoneRefersDefault
 
 
 @dataclass
-class Pool(NoneRefersDefault):
+class Pool(BaseDataStruct):
 
-    name: str
-    contract_address: str
-    current_position: Optional[CurrentPosition]
+    name: str = ""
+    contract_address: str = ""
+    current_position: CurrentPosition = CurrentPosition()
 
 
 @dataclass
-class Pools(NoneRefersDefault):
+class Pools(BaseDataStruct):
 
-    pool: List[Pool]
+    pool: List[Pool] = field(default_factory=lambda: [Pool()])

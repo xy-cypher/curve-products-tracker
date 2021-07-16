@@ -1,21 +1,22 @@
+from dataclasses import field
 from datetime import datetime
 from typing import List
-from typing import Optional
 
+import pytz as pytz
 from marshmallow_dataclass import dataclass
 
-from src.core.datastructures.defaults import NoneRefersDefault
+from src.core.datastructures.base import BaseDataStruct
 from src.core.datastructures.fees import PoolFees
 from src.core.datastructures.rewards import OutstandingRewards
 from src.core.datastructures.tokens import Token
 
 
 @dataclass
-class CurrentPosition(NoneRefersDefault):
+class CurrentPosition(BaseDataStruct):
 
-    time: datetime
-    lp_tokens: float
-    gauge_tokens: float
-    accrued_fees: PoolFees
-    tokens: List[Token]
-    outstanding_rewards: Optional[OutstandingRewards]
+    time: datetime = pytz.utc.localize(datetime.utcnow())
+    lp_tokens: float = 0
+    gauge_tokens: float = 0
+    accrued_fees: PoolFees = PoolFees()
+    tokens: List[Token] = field(default_factory=lambda: [Token()])
+    outstanding_rewards: OutstandingRewards = OutstandingRewards()

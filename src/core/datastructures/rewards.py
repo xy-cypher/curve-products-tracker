@@ -1,36 +1,32 @@
+from dataclasses import field
 from datetime import datetime
 from typing import List
 
+import pytz as pytz
 from marshmallow_dataclass import dataclass
 
+from src.core.datastructures.base import BaseDataStruct
 from src.core.datastructures.coingecko_price import CoinGeckoPrice
-from src.core.datastructures.defaults import NoneRefersDefault
 from src.core.datastructures.tokens import Token
 
 
 @dataclass
-class Rewards(NoneRefersDefault):
+class Rewards(BaseDataStruct):
 
-    tokens: List[Token]
-
-
-@dataclass
-class ClaimedReward(NoneRefersDefault):
-
-    date: datetime.datetime
-    rewards: Rewards
+    tokens: List[Token] = field(default_factory=lambda: [Token()])
 
 
 @dataclass
-class OutstandingRewards(NoneRefersDefault):
+class ClaimedReward(BaseDataStruct):
 
-    coingecko_price: CoinGeckoPrice
+    date: datetime = pytz.utc.localize(datetime.utcnow())
+    rewards: Rewards = Rewards()
+
+
+@dataclass
+class OutstandingRewards(BaseDataStruct):
+
+    coingecko_price: CoinGeckoPrice = CoinGeckoPrice()
     token: str = ""
     num_tokens: float = 0
     value_tokens: float = 0
-
-    def null(self):
-        coingecko_price: CoinGeckoPrice
-        token: str = ""
-        num_tokens: float = 0
-        value_tokens: float = 0

@@ -1,5 +1,5 @@
+import logging
 from datetime import datetime
-from typing import Optional
 from typing import Tuple
 
 from brownie import network
@@ -8,13 +8,25 @@ from brownie.network.contract import Contract
 from src.core.datastructures.coingecko_price import CoinGeckoPrice
 from src.core.datastructures.current_position import CurrentPosition
 from src.core.datastructures.fees import PoolFees
+from src.core.datastructures.rewards import OutstandingRewards
 from src.core.datastructures.tokens import Token
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_CONVEX_GAUGE
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_CURVE_GAUGE
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_LP_TOKEN
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_POOL_CONTRACT
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_CONVEX_GAUGE,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_CURVE_GAUGE,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_LP_TOKEN,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_POOL_CONTRACT,
+)
 from src.utils.coingecko_utils import get_prices_of_coins
 from src.utils.contract_utils import init_contract
+
+
+logging.getLogger(__name__)
 
 
 class CurrentPositionCalculator:
@@ -23,8 +35,12 @@ class CurrentPositionCalculator:
         if not network.is_connected():
             network.connect(network_name)
 
-        self.curve_gauge_contracts = Contract.from_explorer(TRICRYPTO_CURVE_GAUGE)
-        self.convex_gauge_contracts = Contract.from_explorer(TRICRYPTO_CONVEX_GAUGE)
+        self.curve_gauge_contracts = Contract.from_explorer(
+            TRICRYPTO_CURVE_GAUGE
+        )
+        self.convex_gauge_contracts = Contract.from_explorer(
+            TRICRYPTO_CONVEX_GAUGE
+        )
         self.pool_contract = Contract.from_explorer(TRICRYPTO_POOL_CONTRACT)
         self.pool_token_contract = Contract.from_explorer(TRICRYPTO_LP_TOKEN)
 
@@ -45,7 +61,9 @@ class CurrentPositionCalculator:
         current_position_of_tokens = []
         for i in range(len(self.pool_token_tickers)):
 
-            token_contract = init_contract(self.pool_contract.functions.coins(i).call())
+            token_contract = init_contract(
+                self.pool_contract.functions.coins(i).call()
+            )
             token_decimals = token_contract.functions.decimals().call()
             oracle_price = 1
             if self.pool_token_tickers[i] != "USDT":
@@ -71,7 +89,9 @@ class CurrentPositionCalculator:
                     value_tokens=value_tokens,
                     coingecko_price=CoinGeckoPrice(
                         currency=currency,
-                        quote=token_prices_coingecko[self.pool_token_tickers[i]],
+                        quote=token_prices_coingecko[
+                            self.pool_token_tickers[i]
+                        ],
                     ),
                 )
             )
@@ -90,7 +110,9 @@ class CurrentPositionCalculator:
 
         return position_data
 
-    def get_token_and_gauge_bal(self, user_address: str) -> Tuple[float, float]:
+    def get_token_and_gauge_bal(
+        self, user_address: str
+    ) -> Tuple[float, float]:
         """We calculate position on the following token balance:
         (tokens in gauge + free lp tokens)
 
@@ -110,10 +132,21 @@ class CurrentPositionCalculator:
         total_gauge_balance = gauge_balance_convex + gauge_balance_curve
         return total_gauge_balance, pool_token_balance
 
-    def calculate_accrued_fees(self, user_address: str) -> Optional[PoolFees]:
-        # TODO: calc fees
-        return None
+    def calculate_accrued_fees(self, user_address: str) -> PoolFees:
+        # TODO: calc accrued (unclaimed) fees
+        logging.warning(
+            f"Calculating PoolFees not implemented for {self.pool_contract}. "
+            f"Returning empty PoolFees for {user_address}"
+        )
+        return PoolFees()
 
-    def calculate_outstanding_rewards(self, user_address: str) -> Optional[PoolFees]:
-        # TODO: calc fees
-        return None
+    def calculate_outstanding_rewards(
+        self, user_address: str
+    ) -> OutstandingRewards:
+        # TODO: calc outstanding rewards
+        logging.warning(
+            f"Calculating OutstandingRewards not implemented for "
+            f"{self.pool_contract}. Returning empty PoolFees for "
+            f"{user_address}"
+        )
+        return PoolFees()
