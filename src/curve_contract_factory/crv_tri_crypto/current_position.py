@@ -35,14 +35,10 @@ class CurrentPositionCalculator:
         if not network.is_connected():
             network.connect(network_name)
 
-        self.curve_gauge_contracts = Contract.from_explorer(
-            TRICRYPTO_CURVE_GAUGE
-        )
-        self.convex_gauge_contracts = Contract.from_explorer(
-            TRICRYPTO_CONVEX_GAUGE
-        )
-        self.pool_contract = Contract.from_explorer(TRICRYPTO_POOL_CONTRACT)
-        self.pool_token_contract = Contract.from_explorer(TRICRYPTO_LP_TOKEN)
+        self.curve_gauge_contracts = init_contract(TRICRYPTO_CURVE_GAUGE)
+        self.convex_gauge_contracts = init_contract(TRICRYPTO_CONVEX_GAUGE)
+        self.pool_contract = init_contract(TRICRYPTO_POOL_CONTRACT)
+        self.pool_token_contract = init_contract(TRICRYPTO_LP_TOKEN)
 
         self.pool_token_tickers = ["USDT", "WBTC", "ETH"]
 
