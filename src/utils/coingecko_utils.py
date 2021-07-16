@@ -8,15 +8,15 @@ COINGECKO = CoinGeckoAPI()
 
 
 def get_prices_of_coins(currency: str = "usd"):
-    eth_price = COINGECKO.get_price(ids="ethereum", vs_currencies="usd")[
-        "ethereum"
+    eth_price = COINGECKO.get_price(ids="ethereum", vs_currencies="usd")["ethereum"][
+        currency
+    ]
+    wbtc_price = COINGECKO.get_price(ids="wrapped-bitcoin", vs_currencies="usd")[
+        "wrapped-bitcoin"
     ][currency]
-    wbtc_price = COINGECKO.get_price(
-        ids="wrapped-bitcoin", vs_currencies="usd"
-    )["wrapped-bitcoin"][currency]
-    usdt_price = COINGECKO.get_price(ids="tether", vs_currencies="usd")[
-        "tether"
-    ][currency]
+    usdt_price = COINGECKO.get_price(ids="tether", vs_currencies="usd")["tether"][
+        currency
+    ]
     return {
         currency: {"USDT": usdt_price, "WBTC": wbtc_price, "ETH": eth_price},
     }
@@ -33,9 +33,7 @@ def get_prices_of_coins_at(query_datetime: datetime, currency: str = "usd"):
         response: dict = {"prices": [], "market_caps": [], "total_volumes": []}
         add_minutes = 60
         while not response["prices"]:
-            to_timestamp = (
-                query_datetime + timedelta(minutes=add_minutes)
-            ).timestamp()
+            to_timestamp = (query_datetime + timedelta(minutes=add_minutes)).timestamp()
             response = COINGECKO.get_coin_market_chart_range_by_id(
                 id=id,
                 vs_currency=currency,

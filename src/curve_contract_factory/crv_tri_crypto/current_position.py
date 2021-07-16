@@ -9,18 +9,10 @@ from src.core.datastructures.coingecko_price import CoinGeckoPrice
 from src.core.datastructures.current_position import CurrentPosition
 from src.core.datastructures.fees import PoolFees
 from src.core.datastructures.tokens import Token
-from src.curve_contract_factory.crv_tri_crypto.constants import (
-    TRICRYPTO_CONVEX_GAUGE,
-)
-from src.curve_contract_factory.crv_tri_crypto.constants import (
-    TRICRYPTO_CURVE_GAUGE,
-)
-from src.curve_contract_factory.crv_tri_crypto.constants import (
-    TRICRYPTO_LP_TOKEN,
-)
-from src.curve_contract_factory.crv_tri_crypto.constants import (
-    TRICRYPTO_POOL_CONTRACT,
-)
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_CONVEX_GAUGE
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_CURVE_GAUGE
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_LP_TOKEN
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_POOL_CONTRACT
 from src.utils.coingecko_utils import get_prices_of_coins
 from src.utils.contract_utils import init_contract
 
@@ -31,12 +23,8 @@ class CurrentPositionCalculator:
         if not network.is_connected():
             network.connect(network_name)
 
-        self.curve_gauge_contracts = Contract.from_explorer(
-            TRICRYPTO_CURVE_GAUGE
-        )
-        self.convex_gauge_contracts = Contract.from_explorer(
-            TRICRYPTO_CONVEX_GAUGE
-        )
+        self.curve_gauge_contracts = Contract.from_explorer(TRICRYPTO_CURVE_GAUGE)
+        self.convex_gauge_contracts = Contract.from_explorer(TRICRYPTO_CONVEX_GAUGE)
         self.pool_contract = Contract.from_explorer(TRICRYPTO_POOL_CONTRACT)
         self.pool_token_contract = Contract.from_explorer(TRICRYPTO_LP_TOKEN)
 
@@ -57,9 +45,7 @@ class CurrentPositionCalculator:
         current_position_of_tokens = []
         for i in range(len(self.pool_token_tickers)):
 
-            token_contract = init_contract(
-                self.pool_contract.functions.coins(i).call()
-            )
+            token_contract = init_contract(self.pool_contract.functions.coins(i).call())
             token_decimals = token_contract.functions.decimals().call()
             oracle_price = 1
             if self.pool_token_tickers[i] != "USDT":
@@ -85,9 +71,7 @@ class CurrentPositionCalculator:
                     value_tokens=value_tokens,
                     coingecko_price=CoinGeckoPrice(
                         currency=currency,
-                        quote=token_prices_coingecko[
-                            self.pool_token_tickers[i]
-                        ],
+                        quote=token_prices_coingecko[self.pool_token_tickers[i]],
                     ),
                 )
             )
@@ -106,9 +90,7 @@ class CurrentPositionCalculator:
 
         return position_data
 
-    def get_token_and_gauge_bal(
-        self, user_address: str
-    ) -> Tuple[float, float]:
+    def get_token_and_gauge_bal(self, user_address: str) -> Tuple[float, float]:
         """We calculate position on the following token balance:
         (tokens in gauge + free lp tokens)
 
@@ -132,8 +114,6 @@ class CurrentPositionCalculator:
         # TODO: calc fees
         return None
 
-    def calculate_outstanding_rewards(
-        self, user_address: str
-    ) -> Optional[PoolFees]:
+    def calculate_outstanding_rewards(self, user_address: str) -> Optional[PoolFees]:
         # TODO: calc fees
         return None

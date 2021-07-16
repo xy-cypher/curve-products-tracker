@@ -3,12 +3,8 @@ import json
 from src.core.contract_transaction import ContractTransaction
 from src.core.method_event import SubContractEvent
 from src.core.transaction import Transaction
-from src.curve_contract_factory.crv_tri_crypto.constants import (
-    TRICRYPTO_LP_TOKEN,
-)
-from src.curve_contract_factory.crv_tri_crypto.constants import (
-    TRICRYPTO_POOL_CONTRACT,
-)
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_LP_TOKEN
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_POOL_CONTRACT
 
 
 def main():
@@ -51,9 +47,7 @@ def main():
     # 6. Curve LP token base implementation contract orchestrates minted LP token transfer from
     #    Curve CryptoSwap to user address.
 
-    tx_hash_str = (
-        "0xc77884d3af1782869772f57ecfadd62cc16087e0576092928eaaec4ada9bbfb3"
-    )
+    tx_hash_str = "0xc77884d3af1782869772f57ecfadd62cc16087e0576092928eaaec4ada9bbfb3"
     parsed_tx = Transaction(tx_hash_str)
 
     contract_tx_parser = ContractTransaction(
@@ -68,9 +62,7 @@ def main():
     print(json.dumps(parsed_tx, indent=4))
 
     # Example 2
-    tx_hash_str = (
-        "0xcc1695bab2ff8343e5b407aae3a97ea4ec37d9b5f4cb88847752eefaebfd0181"
-    )
+    tx_hash_str = "0xcc1695bab2ff8343e5b407aae3a97ea4ec37d9b5f4cb88847752eefaebfd0181"
     parsed_tx = Transaction(tx_hash_str)
 
     contract_tx_parser = ContractTransaction(
@@ -85,9 +77,7 @@ def main():
     print(json.dumps(parsed_tx, indent=4))
 
     # Example 3 - Remove Liquidity in all three coins
-    tx_hash_str = (
-        "0x30fbbe236793dbb0538b0ad0751f99cb54b472ee399542903f5f0db2623bfa0f"
-    )
+    tx_hash_str = "0x30fbbe236793dbb0538b0ad0751f99cb54b472ee399542903f5f0db2623bfa0f"
     parsed_tx = Transaction(tx_hash_str)
 
     contract_tx_parser = ContractTransaction(
@@ -102,9 +92,7 @@ def main():
     print(json.dumps(parsed_tx, indent=4))
 
     # Example 4 - Remove Liquidity in one coin
-    tx_hash_str = (
-        "0x7d6a9f9365544c4abf889765b749c984b9e5e1632bafe2665229feec61b0b6a8"
-    )
+    tx_hash_str = "0x7d6a9f9365544c4abf889765b749c984b9e5e1632bafe2665229feec61b0b6a8"
     parsed_tx = Transaction(tx_hash_str)
 
     contract_tx_parser = ContractTransaction(
