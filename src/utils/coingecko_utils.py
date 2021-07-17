@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from time import sleep
 
 from pycoingecko import CoinGeckoAPI
@@ -7,16 +8,18 @@ COINGECKO = CoinGeckoAPI()
 
 
 def get_prices_of_coins(currency: str = "usd"):
-    eth_price = COINGECKO.get_price(ids="ethereum", vs_currencies="usd")["ethereum"][
-        currency
-    ]
-    wbtc_price = COINGECKO.get_price(ids="wrapped-bitcoin", vs_currencies="usd")[
-        "wrapped-bitcoin"
+    eth_price = COINGECKO.get_price(ids="ethereum", vs_currencies="usd")[
+        "ethereum"
     ][currency]
-    usdt_price = COINGECKO.get_price(ids="tether", vs_currencies="usd")["tether"][
-        currency
-    ]
-    return {currency: {"USDT": usdt_price, "WBTC": wbtc_price, "ETH": eth_price}}
+    wbtc_price = COINGECKO.get_price(
+        ids="wrapped-bitcoin", vs_currencies="usd"
+    )["wrapped-bitcoin"][currency]
+    usdt_price = COINGECKO.get_price(ids="tether", vs_currencies="usd")[
+        "tether"
+    ][currency]
+    return {
+        currency: {"USDT": usdt_price, "WBTC": wbtc_price, "ETH": eth_price},
+    }
 
 
 def get_prices_of_coins_at(query_datetime: datetime, currency: str = "usd"):
@@ -27,10 +30,12 @@ def get_prices_of_coins_at(query_datetime: datetime, currency: str = "usd"):
     prices = {}
     for ticker, id in ids.items():
 
-        response = {"prices": [], "market_caps": [], "total_volumes": []}
+        response: dict = {"prices": [], "market_caps": [], "total_volumes": []}
         add_minutes = 60
         while not response["prices"]:
-            to_timestamp = (query_datetime + timedelta(minutes=add_minutes)).timestamp()
+            to_timestamp = (
+                query_datetime + timedelta(minutes=add_minutes)
+            ).timestamp()
             response = COINGECKO.get_coin_market_chart_range_by_id(
                 id=id,
                 vs_currency=currency,
@@ -59,7 +64,8 @@ def main():
 
     query_datetime = datetime.utcnow() - timedelta(days=10)
     fetched_prices = get_prices_of_coins_at(
-        query_datetime=query_datetime, currency="usd"
+        query_datetime=query_datetime,
+        currency="usd",
     )
     print(json.dumps(fetched_prices, indent=4))
 

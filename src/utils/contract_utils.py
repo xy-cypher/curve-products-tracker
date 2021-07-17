@@ -1,21 +1,32 @@
-import os
-from hexbytes import HexBytes
-
-from etherscan.contracts import Contract as EtherscanContract
-from etherscan.client import Client
+from brownie import network
+from brownie.network.contract import Contract
+from brownie.network.contract import ContractNotFound
 from etherscan.accounts import Account
-
-from src.utils.misc_utils import w3_infura
+from etherscan.client import Client
+from hexbytes import HexBytes
 from web3 import Web3
+from web3.exceptions import InvalidAddress
+
+from src.utils.exceptions import NetworkNotConnected
+from src.utils.misc_utils import w3_infura
 
 
 def init_contract(address: str):
 
-    address = Web3.toChecksumAddress(address)
-    contract_abi = EtherscanContract(
-        address=address, api_key=os.environ["ETHERSCAN_API_KEY"]
-    ).get_abi()
-    contract = w3_infura.eth.contract(address=address, abi=contract_abi)
+    if not network.is_connected():
+        raise NetworkNotConnected
+
+    if not address_is_contract(address):
+        raise ContractNotFound
+
+    try:
+        contract = Contract(address_or_alias=address)
+    except InvalidAddress:
+        raise  # TODO: Is handling this needed?
+    except Exception as e:  # TODO: exception handling
+        print(e)
+        contract = Contract.from_explorer(address=address)
+
     return contract
 
 
@@ -25,21 +36,29 @@ class EtherscanContractExtended(Account):
         self.url_dict[self.MODULE] = "account"
 
     def get_tx_with(
-        self, addr: str, start_block: int = 0, end_block: int = -1, sort="asc"
+        self,
+        addr: str,
+        start_block: int = 0,
+        end_block: int = -1,
+        sort: str = "asc",
     ):
 
         self.url_dict[self.ACTION] = "txlist"
         self.url_dict[self.SORT] = sort
         self.url_dict[self.START_BLOCK] = str(start_block)
-        end_block = str(end_block)
+        self.url_dict[self.END_BLOCK] = str(end_block)
         if int(end_block) == -1:
-            end_block = "latest"
-        self.url_dict[self.END_BLOCK] = end_block
+            self.url_dict[self.END_BLOCK] = "latest"
+
         self.build_url()
         req = self.connect()
         relevant_txes = []
         for tx in req["result"]:
-            if tx["from"] in [addr, addr.lower(), Web3.toChecksumAddress(addr)]:
+            if tx["from"] in [
+                addr,
+                addr.lower(),
+                Web3.toChecksumAddress(addr),
+            ]:
                 relevant_txes.append(tx)
 
         return relevant_txes
