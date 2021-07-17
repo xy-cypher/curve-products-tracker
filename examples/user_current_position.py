@@ -1,8 +1,10 @@
 import argparse
 import sys
 
-from brownie import network
-
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_CONVEX_GAUGE
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_CURVE_GAUGE
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_LP_TOKEN
+from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_POOL_CONTRACT
 from src.curve_contract_factory.crv_tri_crypto.current_position import (
     CurrentPositionCalculator,
 )
@@ -44,11 +46,17 @@ def main(args):
     print(f"User Address: {args.address}")
     print("Fetching all deposits to Curve v2 TriCrypto pool.")
 
-    tricrypto_calculator = CurrentPositionCalculator(network_name="mainnet")
+    tricrypto_calculator = CurrentPositionCalculator(
+        pool_contract=TRICRYPTO_v2_POOL_CONTRACT,
+        pool_token_contract=TRICRYPTO_v2_LP_TOKEN,
+        curve_gauge_contract=TRICRYPTO_v2_CURVE_GAUGE,
+        convex_gauge_contract=TRICRYPTO_v2_CONVEX_GAUGE,
+        network_name="mainnet",
+    )
     current_position = tricrypto_calculator.get_current_position(
         user_address=args.address
     )
-    print(current_position)
+    print(json.dumps(current_position.__dict__), indent=4, default=str)
 
 
 def run():

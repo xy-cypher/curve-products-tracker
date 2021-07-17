@@ -1,5 +1,3 @@
-import os
-
 from brownie import network
 from brownie.network.contract import Contract
 from brownie.network.contract import ContractNotFound
@@ -7,6 +5,7 @@ from etherscan.accounts import Account
 from etherscan.client import Client
 from hexbytes import HexBytes
 from web3 import Web3
+from web3.exceptions import InvalidAddress
 
 from src.utils.exceptions import NetworkNotConnected
 from src.utils.misc_utils import w3_infura
@@ -22,6 +21,8 @@ def init_contract(address: str):
 
     try:
         contract = Contract(address_or_alias=address)
+    except InvalidAddress:
+        raise  # TODO: Is handling this needed?
     except Exception as e:  # TODO: exception handling
         print(e)
         contract = Contract.from_explorer(address=address)
