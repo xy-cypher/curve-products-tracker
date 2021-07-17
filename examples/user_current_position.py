@@ -1,10 +1,18 @@
 import argparse
 import sys
 
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_CONVEX_GAUGE
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_CURVE_GAUGE
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_LP_TOKEN
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_POOL_CONTRACT
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_CONVEX_GAUGE,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_CURVE_GAUGE,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_LP_TOKEN,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_POOL_CONTRACT,
+)
 from src.curve_contract_factory.crv_tri_crypto.current_position import (
     CurrentPositionCalculator,
 )
@@ -56,7 +64,7 @@ def main(args):
     current_position = tricrypto_calculator.get_current_position(
         user_address=args.address
     )
-    print(json.dumps(current_position.__dict__), indent=4, default=str)
+    print(json.dumps(current_position.__dict__, indent=4, default=str))
 
 
 def run():
