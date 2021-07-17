@@ -13,8 +13,8 @@ from src.curve_contract_factory.crv_tri_crypto.constants import (
 from src.curve_contract_factory.crv_tri_crypto.constants import (
     TRICRYPTO_v2_POOL_CONTRACT,
 )
-from src.curve_contract_factory.crv_tri_crypto.current_position import (
-    CurrentPositionCalculator,
+from src.curve_contract_factory.crv_tri_crypto.get_current_position import (
+    TriCryptoCurrentPositionCalculator,
 )
 
 
@@ -54,7 +54,7 @@ def main(args):
     print(f"User Address: {args.address}")
     print("Fetching all deposits to Curve v2 TriCrypto pool.")
 
-    tricrypto_calculator = CurrentPositionCalculator(
+    tricrypto_calculator = TriCryptoCurrentPositionCalculator(
         pool_contract=TRICRYPTO_v2_POOL_CONTRACT,
         pool_token_contract=TRICRYPTO_v2_LP_TOKEN,
         curve_gauge_contract=TRICRYPTO_v2_CURVE_GAUGE,
