@@ -3,6 +3,8 @@ from typing import List
 
 from brownie import network
 
+from src.core.datastructures.fees import PoolFees
+from src.core.datastructures.rewards import OutstandingRewards
 from src.core.sanity_check.check_value import is_dust
 from src.utils.contract_utils import init_contract
 
@@ -21,8 +23,7 @@ class CurrentPositionCalculator:
         network_name: str = "mainnet",
     ):
 
-        if not network.is_connected():
-            network.connect(network_name)
+        network.connect(network_name)
 
         self.curve_gauge_contract = init_contract(curve_gauge_contract)
 
@@ -37,7 +38,7 @@ class CurrentPositionCalculator:
 
         self.pool_token_tickers = pool_token_tickers
 
-    def __calc_max_withdrawable_lp_tokens(self, total_tokens):
+    def calc_max_withdrawable_lp_tokens(self, total_tokens):
         """This is just to ensure that the total tokens a token holder has
         is actually withdrawable: if they are a whale, they may not be able
         to withdraw all of their liquidity but a certain percentage of it

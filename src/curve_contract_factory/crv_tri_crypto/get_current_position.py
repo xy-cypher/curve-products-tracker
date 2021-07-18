@@ -3,15 +3,23 @@ from datetime import datetime
 
 import pytz
 
-from src.core.datastructures.coingecko_price import CoinGeckoPrice
+from src.core.datastructures.coin_price import CoinPrice
 from src.core.datastructures.current_position import CurrentPosition
 from src.core.datastructures.tokens import Token
 from src.core.operations.get_current_position import CurrentPositionCalculator
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_CONVEX_GAUGE
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_CURVE_GAUGE
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_LP_TOKEN
-from src.curve_contract_factory.crv_tri_crypto.constants import TRICRYPTO_v2_POOL_CONTRACT
-from src.utils.coingecko_utils import get_prices_of_coins
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_CONVEX_GAUGE,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_CURVE_GAUGE,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_LP_TOKEN,
+)
+from src.curve_contract_factory.crv_tri_crypto.constants import (
+    TRICRYPTO_v2_POOL_CONTRACT,
+)
+from src.utils.coin_prices import get_prices_of_coins
 from src.utils.contract_utils import init_contract
 
 
@@ -37,7 +45,7 @@ class TriCryptoCurrentPositionCalculator(CurrentPositionCalculator):
             user_address=user_address
         )
         token_balance_to_calc_on = sum(platform_token_balances.values())
-        token_balance_to_calc_on = self.__calc_max_withdrawable_lp_tokens(
+        token_balance_to_calc_on = self.calc_max_withdrawable_lp_tokens(
             token_balance_to_calc_on
         )
 
@@ -73,7 +81,7 @@ class TriCryptoCurrentPositionCalculator(CurrentPositionCalculator):
                     token=self.pool_token_tickers[i],
                     num_tokens=num_tokens,
                     value_tokens=value_tokens,
-                    coingecko_price=CoinGeckoPrice(
+                    coingecko_price=CoinPrice(
                         currency=currency,
                         quote=token_prices_coingecko[currency][
                             self.pool_token_tickers[i]

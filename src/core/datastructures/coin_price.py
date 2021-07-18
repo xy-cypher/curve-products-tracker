@@ -7,7 +7,7 @@ from src.core.datastructures.base import BaseDataStruct
 
 
 @dataclass
-class CoinGeckoPrice(BaseDataStruct):
+class CoinPrice(BaseDataStruct):
 
     time: datetime = pytz.utc.localize(datetime.utcnow())
     currency: str = ""
