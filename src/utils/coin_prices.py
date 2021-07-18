@@ -9,7 +9,6 @@ from pycoingecko import CoinGeckoAPI
 
 from src.core.datastructures.coin_price import CoinPrice
 from src.utils.constants import SUSHISWAP_ROUTER_CONTRACT
-from src.utils.constants import USDT_ADDR
 from src.utils.contract_utils import init_contract
 
 COINGECKO = CoinGeckoAPI()
@@ -39,15 +38,20 @@ def get_sushiswap_price(
 
 
 def get_current_price_coingecko(
-    token_name: str, currency: str = "usd"
+    token_contract: str, currency: str = "usd"
 ) -> CoinPrice:
 
-    token_price = COINGECKO.get_price(ids=id, vs_currencies=currency)
+    token_price = COINGECKO.get_token_price(
+        id="ethereum",
+        contract_addresses=token_contract,
+        vs_currencies=currency,
+    )
+    time_now = pytz.utc.localize(datetime.utcnow())
 
     return CoinPrice(
-        time=pytz.utc.localize(datetime.utcnow()),
+        time=time_now,
         currency=currency,
-        quote=token_price[token_name][currency],
+        quote=token_price[token_contract.lower()][currency],
     )
 
 
@@ -88,6 +92,12 @@ def get_historical_price_coingecko(
 
 def main():
     import json
+
+    fetched_prices = get_current_price_coingecko(
+        token_contract="0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        currency="usd",
+    )
+    print(json.dumps(fetched_prices, indent=4, default=str))
 
     query_datetime = datetime.utcnow() - timedelta(days=10)
     fetched_prices = get_historical_price_coingecko(

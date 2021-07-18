@@ -1,14 +1,14 @@
 import json
 
 from src.core.contract_transaction import ContractTransaction
-from src.core.method_event import SubContractEvent
-from src.core.transaction import Transaction
-from src.curve_contract_factory.crv_tri_crypto.constants import (
+from src.core.curve_contracts_factory import (
     TRICRYPTO_LP_TOKEN,
 )
-from src.curve_contract_factory.crv_tri_crypto.constants import (
+from src.core.curve_contracts_factory import (
     TRICRYPTO_POOL_CONTRACT,
 )
+from src.core.method_event import SubContractEvent
+from src.core.transaction import Transaction
 
 
 def main():

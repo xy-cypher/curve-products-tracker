@@ -6,6 +6,7 @@ import pytz
 from brownie import network
 from brownie import ZERO_ADDRESS
 from brownie.network import transaction
+from brownie.network.event import EventDict
 
 from src.core.datastructures.pool_transactions import LiquidityTransaction
 from src.core.datastructures.tokens import Token
@@ -64,7 +65,7 @@ def get_added_liquidity_for_tx(tx_hash: str, currency: str = "usd"):
     )
 
 
-def get_minted_tokens(events: Optional[network.event.EventDict]) -> int:
+def get_minted_tokens(events: Optional[EventDict]) -> int:
 
     for event in events:
         if "_from" in event.keys() and event["_from"] == ZERO_ADDRESS:
@@ -73,7 +74,7 @@ def get_minted_tokens(events: Optional[network.event.EventDict]) -> int:
     return 0
 
 
-def get_added_tokens(events: Optional[network.event.EventDict]) -> Tuple:
+def get_added_tokens(events: Optional[EventDict]) -> Tuple:
 
     for event in events:
         if event.name == "AddLiquidity":
