@@ -1,9 +1,7 @@
 import argparse
 import sys
 
-from src.curve_contract_factory.crv_tri_crypto.get_current_position import (
-    TriCryptoCurrentPositionCalculator,
-)
+from src.core.operations.get_added_liquidity import get_added_liquidity_for_tx
 
 
 def parse_args(args):
@@ -16,35 +14,28 @@ def parse_args(args):
       :obj:`argparse.Namespace`: command line parameters namespace
     """
     parser = argparse.ArgumentParser(
-        description="Get TriCrypto positions and deposit info for address."
+        description="Get added liquidity in transaction hash."
     )
     parser.add_argument(
-        dest="address",
-        help="Address to fetch info for.",
+        dest="tx_hash",
+        help="transaction hash",
         type=str,
     )
     return parser.parse_args(args)
 
 
 def main(args):
-    """Wrapper allowing :funcs:`added_liquidity` and `get_tricrypto_liquidity_positions`
-    to be called with string arguments in a CLI fashion.
-
-    It prints the result to the ``stdout`` in a nicely formatted message.
-
-    Args:
-      args (List[str]): command line parameters as list of strings
-          (for example  ``["0x331aF2E331bd619DefAa5DAc6c038f53FCF9F785"]``).
+    """
+    example txes:
+    added liquidity: 0xc77884d3af1782869772f57ecfadd62cc16087e0576092928eaaec4ada9bbfb3
     """
     import json
 
     args = parse_args(args)
-    print(f"User Address: {args.address}")
-    print("Fetching all deposits to Curve v2 TriCrypto pool.")
+    print(f"Tx hash: {args.tx_hash}")
 
-    tricrypto_calculator = TriCryptoCurrentPositionCalculator("mainnet")
-    current_position = tricrypto_calculator.get_current_position(args.address)
-    print(json.dumps(current_position.__dict__, indent=4, default=str))
+    added_liquidity = get_added_liquidity_for_tx(args.tx_hash)
+    print(json.dumps(added_liquidity.__dict__, indent=4, default=str))
 
 
 def run():

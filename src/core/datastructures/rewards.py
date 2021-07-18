@@ -6,7 +6,7 @@ import pytz as pytz
 from marshmallow_dataclass import dataclass
 
 from src.core.datastructures.base import BaseDataStruct
-from src.core.datastructures.coingecko_price import CoinGeckoPrice
+from src.core.datastructures.coin_price import CoinPrice
 from src.core.datastructures.tokens import Token
 
 
@@ -26,7 +26,7 @@ class ClaimedReward(BaseDataStruct):
 @dataclass
 class OutstandingRewards(BaseDataStruct):
 
-    coingecko_price: CoinGeckoPrice = CoinGeckoPrice()
+    coingecko_price: CoinPrice = CoinPrice()
     token: str = ""
     num_tokens: float = 0
     value_tokens: float = 0

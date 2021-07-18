@@ -22,15 +22,15 @@ def init_contract(address: str):
     try:
         contract = Contract(address_or_alias=address)
     except InvalidAddress:
-        raise  # TODO: Is handling this needed?
-    except Exception as e:  # TODO: exception handling
+        raise
+    except Exception as e:
         print(e)
         contract = Contract.from_explorer(address=address)
 
     return contract
 
 
-class EtherscanContractExtended(Account):
+class TransactionScraper(Account):
     def __init__(self, address=Client.dao_address, api_key="YourApiKey"):
         Account.__init__(self, address=address, api_key=api_key)
         self.url_dict[self.MODULE] = "account"

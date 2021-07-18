@@ -18,9 +18,10 @@ network:
                 accounts: 10
                 evm_version: petersburg
                 mnemonic: brownie
-        # set your Infura API token to the environment variable WEB3_INFURA_PROJECT_ID
         mainnet:
             host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        archivenode:
+            host: https://api.archivenode.io/$ARCHIVENODE_API_KEY
         goerli:
             host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         kovan:

@@ -11,7 +11,7 @@ from src.core.datastructures.tokens import Token
 
 
 @dataclass
-class LiquidityTransactions(BaseDataStruct):
+class LiquidityTransaction(BaseDataStruct):
 
     date: datetime = pytz.utc.localize(datetime.utcnow())
     contract_function: str = ""
@@ -28,4 +28,6 @@ class HistoricalTransactions(BaseDataStruct):
     claimed_rewards: List[ClaimedReward] = field(
         default_factory=lambda: [ClaimedReward()]
     )
-    liquidity_transactions: LiquidityTransactions = LiquidityTransactions()
+    liquidity_transactions: List[LiquidityTransaction] = field(
+        default_factory=lambda: [LiquidityTransaction()]
+    )
