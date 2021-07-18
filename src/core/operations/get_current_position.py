@@ -13,7 +13,6 @@ from src.core.sanity_check.check_value import is_dust
 from src.utils.coin_prices import get_current_price_coingecko
 from src.utils.contract_utils import init_contract
 
-
 logging.getLogger(__name__)
 
 
