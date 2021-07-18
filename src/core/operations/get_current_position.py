@@ -57,7 +57,7 @@ class CurrentPositionCalculator:
         :return:
         """
 
-        withdraw_fraction = [x * 0.01 for x in range(0, 100)[::-1]]
+        withdraw_fraction = [x * 0.01 for x in range(0, 101)[::-1]]
         for fraction in withdraw_fraction:
             try:
                 num_withdrawable_lp_tokens = fraction * total_tokens
