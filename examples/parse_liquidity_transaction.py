@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from src.core.operations.get_liquidity_transaction import (
+from src.core.operations.read_liquidity_transaction import (
     get_liquidity_moved_for_tx,
 )
 
