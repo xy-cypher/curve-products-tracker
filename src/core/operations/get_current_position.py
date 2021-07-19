@@ -7,7 +7,7 @@ from brownie import network
 from src.core.curve_contracts_factory import PoolInfo
 from src.core.datastructures.current_position import CurrentPosition
 from src.core.datastructures.fees import PoolFees
-from src.core.datastructures.rewards import OutstandingRewards
+from src.core.datastructures.rewards import OutstandingReward
 from src.core.datastructures.tokens import Token
 from src.core.sanity_check.check_value import is_dust
 from src.utils.coin_prices import get_current_price_coingecko
@@ -175,7 +175,7 @@ class CurrentPositionCalculator:
 
     def calculate_outstanding_rewards(
         self, user_address: str
-    ) -> OutstandingRewards:
+    ) -> OutstandingReward:
         # TODO: calc outstanding rewards
         logging.warning(
             f"Calculating OutstandingRewards not implemented for "

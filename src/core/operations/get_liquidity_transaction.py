@@ -115,12 +115,15 @@ def get_removed_tokens(events: EventDict) -> Tuple:
 
 
 def get_removed_tokens_one(events: EventDict) -> Tuple:
-
+    liquidity_pool_transaction_index = None
     for event_id, event in enumerate(events):
         if "_to" in event.keys() and event["_to"] == ZERO_ADDRESS:
             # after the lp token is burnt, the pool transfer contract is
             # called.
             liquidity_pool_transaction_index = event_id + 1
+
+    if not liquidity_pool_transaction_index:
+        return ()  # TODO: might be a source of error
 
     liquidity_pool_addr = events[liquidity_pool_transaction_index]["from"]
     liquidity_pool_contract = init_contract(liquidity_pool_addr)
@@ -134,10 +137,15 @@ def get_removed_tokens_one(events: EventDict) -> Tuple:
         except ValueError:  # max index reached, hence count is num tokens
             break
 
+    token_amount = 0
+    token_index = None
     for event in events:
         if event.name == "RemoveLiquidityOne":
             token_amount = event["token_amount"]
             token_index = event["coin_index"]
+
+    if not token_index:
+        return ()  # TODO: might be a source of error
 
     # create an empty tuple and fill in tokens_removed at token_index
     tokens_removed = []

@@ -7,7 +7,7 @@ from marshmallow_dataclass import dataclass
 
 from src.core.datastructures.base import BaseDataStruct
 from src.core.datastructures.fees import PoolFees
-from src.core.datastructures.rewards import OutstandingRewards
+from src.core.datastructures.rewards import Rewards
 from src.core.datastructures.tokens import Token
 
 
@@ -20,4 +20,6 @@ class CurrentPosition(BaseDataStruct):
     convex_gauge_tokens: float = 0
     accrued_fees: PoolFees = PoolFees()
     tokens: List[Token] = field(default_factory=lambda: [Token()])
-    outstanding_rewards: OutstandingRewards = OutstandingRewards()
+    outstanding_rewards: List[Rewards] = field(
+        default_factory=lambda: [Rewards()]
+    )
