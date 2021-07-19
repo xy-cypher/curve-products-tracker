@@ -2,15 +2,15 @@ from typing import List
 
 from brownie import network
 
-from src.core.curve_contracts_factory import PoolInfo
 from src.core.datastructures.rewards import Rewards
+from src.core.products_factory import LiquidityPoolProduct
 from src.utils.contract_utils import init_contract
 
 
 class OutstandingRewardsCalculator:
     def __init__(
         self,
-        pool_info: PoolInfo,
+        product: LiquidityPoolProduct,
         network_name: str = "mainnet",
     ):
         network.connect(network_name)
@@ -46,5 +46,3 @@ class OutstandingRewardsCalculator:
 
     def get_pool_rewards(self, address: str):
         return Rewards()
-
-

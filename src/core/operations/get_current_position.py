@@ -4,11 +4,11 @@ from datetime import datetime
 import pytz
 from brownie import network
 
-from src.core.curve_contracts_factory import PoolInfo
 from src.core.datastructures.current_position import CurrentPosition
 from src.core.datastructures.fees import PoolFees
-from src.core.datastructures.rewards import OutstandingReward
+from src.core.datastructures.rewards import Rewards
 from src.core.datastructures.tokens import Token
+from src.core.products_factory import LiquidityPoolProduct
 from src.core.sanity_check.check_value import is_dust
 from src.utils.coin_prices import get_current_price_coingecko
 from src.utils.contract_utils import init_contract
@@ -19,25 +19,16 @@ logging.getLogger(__name__)
 class CurrentPositionCalculator:
     def __init__(
         self,
-        pool_info: PoolInfo,
+        product: LiquidityPoolProduct,
         network_name: str = "mainnet",
     ):
 
         network.connect(network_name)
 
-        self.curve_gauge_contract = init_contract(
-            pool_info.curve_gauge_contract
+        self.pool_contract = init_contract(product.pool_contract.contract_addr)
+        self.pool_token_contract = init_contract(
+            product.pool_token_contract.contract_addr
         )
-
-        # TODO: Remove this later as it is temporary code.
-        self.convex_gauge_contract = None
-        if pool_info.convex_gauge_contract:
-            self.convex_gauge_contract = init_contract(
-                pool_info.convex_gauge_contract
-            )
-
-        self.pool_contract = init_contract(pool_info.pool_contract)
-        self.pool_token_contract = init_contract(pool_info.pool_token_contract)
         self.pool_token_decimals = self.pool_token_contract.decimals()
 
         self.num_underlying_tokens = 0
@@ -47,6 +38,16 @@ class CurrentPositionCalculator:
                 self.num_underlying_tokens += 1
             except ValueError:  # max index reached, hence count is num tokens
                 break
+
+        # initialise auxiliary contracts:
+        self.other_contracts = {}
+        for contract_name, contract in product.other_contracts.items():
+            contract_name: str = contract_name
+            self.other_contracts[contract_name] = None
+            if contract.contract_addr:
+                self.other_contracts[contract_name] = init_contract(
+                    contract.contract_addr
+                )
 
     def calc_max_withdrawable_lp_tokens(self, total_tokens):
         """This is just to ensure that the total tokens a token holder has
@@ -77,29 +78,22 @@ class CurrentPositionCalculator:
         :param user_address: web3 address of the user
         :return:
         """
-        gauge_balance_convex = 0
-        if self.convex_gauge_contract:
-            gauge_balance_convex = self.convex_gauge_contract.balanceOf(
-                user_address
-            )
-            if is_dust(
-                gauge_balance_convex, self.pool_token_contract.decimals()
-            ):
-                gauge_balance_convex = 0
+        token_balances = {}
 
-        gauge_balance_curve = self.curve_gauge_contract.balanceOf(user_address)
-        if is_dust(gauge_balance_curve, self.pool_token_contract.decimals()):
-            gauge_balance_curve = 0
+        for name, contract in self.other_contracts.items():
+            if not contract:
+                continue
+            token_balance = contract.balanceOf(user_address)
+            if is_dust(token_balance, self.pool_token_contract.decimals()):
+                token_balances = 0
+            token_balances[name] = token_balance
 
         pool_token_balance = self.pool_token_contract.balanceOf(user_address)
         if is_dust(pool_token_balance, self.pool_token_contract.decimals()):
             pool_token_balance = 0
+        token_balances["liquidity_pool"] = pool_token_balance
 
-        return {
-            "convex_gauge": gauge_balance_convex,
-            "curve_gauge": gauge_balance_curve,
-            "liquidity_pool": pool_token_balance,
-        }
+        return token_balances
 
     def get_current_position(self, user_address: str, currency: str = "usd"):
 
@@ -147,39 +141,14 @@ class CurrentPositionCalculator:
                 ),
             )
 
-        accrued_fees = self.calculate_accrued_fees(user_address=user_address)
-        outstanding_rewards = self.calculate_outstanding_rewards(user_address)
-
+        platform_token_balances.update(
+            (x, y / 10 ** self.pool_token_decimals)
+            for x, y in platform_token_balances.items()
+        )
         position_data = CurrentPosition(
             time=time_now,
-            lp_tokens=platform_token_balances["liquidity_pool"]
-            / 10 ** self.pool_token_decimals,
-            curve_gauge_tokens=platform_token_balances["curve_gauge"]
-            / 10 ** self.pool_token_decimals,
-            convex_gauge_tokens=platform_token_balances["convex_gauge"]
-            / 10 ** self.pool_token_decimals,
-            accrued_fees=accrued_fees,
+            token_balances=platform_token_balances,
             tokens=current_position_of_tokens,
-            outstanding_rewards=outstanding_rewards,
         )
 
         return position_data
-
-    def calculate_accrued_fees(self, user_address: str) -> PoolFees:
-        # TODO: calc accrued (unclaimed) fees
-        logging.warning(
-            f"Calculating PoolFees not implemented for {self.pool_contract}. "
-            f"Returning empty PoolFees for {user_address}"
-        )
-        return PoolFees()
-
-    def calculate_outstanding_rewards(
-        self, user_address: str
-    ) -> OutstandingReward:
-        # TODO: calc outstanding rewards
-        logging.warning(
-            f"Calculating OutstandingRewards not implemented for "
-            f"{self.pool_contract}. Returning empty PoolFees for "
-            f"{user_address}"
-        )
-        return PoolFees()

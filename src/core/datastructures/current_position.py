@@ -1,5 +1,6 @@
 from dataclasses import field
 from datetime import datetime
+from typing import Dict
 from typing import List
 
 import pytz as pytz
@@ -15,9 +16,7 @@ from src.core.datastructures.tokens import Token
 class CurrentPosition(BaseDataStruct):
 
     time: datetime = pytz.utc.localize(datetime.utcnow())
-    lp_tokens: float = 0
-    curve_gauge_tokens: float = 0
-    convex_gauge_tokens: float = 0
+    token_balances: Dict[str, float] = field(default_factory=lambda: {"": 0})
     accrued_fees: PoolFees = PoolFees()
     tokens: List[Token] = field(default_factory=lambda: [Token()])
     outstanding_rewards: List[Rewards] = field(

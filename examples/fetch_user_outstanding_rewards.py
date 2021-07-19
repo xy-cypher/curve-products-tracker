@@ -1,10 +1,10 @@
 import argparse
 import sys
 
-from src.core.curve_contracts_factory import TRICRYPTO_V2_POOL
 from src.core.operations.outstanding_rewards.get_pool_rewards import (
     OutstandingRewardsCalculator,
 )
+from src.core.products_factory import TRICRYPTO_V2_POOL
 
 
 def parse_args(args):
