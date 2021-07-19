@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from src.core.curve_contracts_factory import TRICRYPTO_V2_POOL
-from src.core.operations.get_outstanding_rewards import (
+from src.core.operations.outstanding_rewards.get_pool_rewards import (
     OutstandingRewardsCalculator,
 )
 

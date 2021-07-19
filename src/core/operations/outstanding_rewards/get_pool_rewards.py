@@ -3,7 +3,6 @@ from typing import List
 from brownie import network
 
 from src.core.curve_contracts_factory import PoolInfo
-from src.core.datastructures.rewards import OutstandingReward
 from src.core.datastructures.rewards import Rewards
 from src.utils.contract_utils import init_contract
 
@@ -47,3 +46,5 @@ class OutstandingRewardsCalculator:
 
     def get_pool_rewards(self, address: str):
         return Rewards()
+
+
