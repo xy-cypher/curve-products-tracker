@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from src.core.operations.get_current_position import CurvePositionCalculator
+from src.core.operations.get_position import CurvePositionCalculator
 from src.core.products_factory import TRICRYPTO_V2
 
 
@@ -19,13 +19,17 @@ def parse_args(args):
 
 def main(args):
     import json
+    from brownie import web3
 
     args = parse_args(args)
     print(f"User Address: {args.address}")
     print("Fetching all deposits to Curve v2 TriCrypto pool.")
 
     tricrypto_calculator = CurvePositionCalculator(TRICRYPTO_V2)
-    current_position = tricrypto_calculator.get_current_position(args.address)
+    current_position = tricrypto_calculator.get_current_position(
+        args.address,
+        block_number=web3.eth.block_number
+    )
     print(json.dumps(current_position.__dict__, indent=4, default=str))
 
 

@@ -6,7 +6,7 @@ import pytz
 from brownie import network
 from brownie import web3
 
-from src.core.datastructures.current_position import CurrentPosition
+from src.core.datastructures.current_position import Position
 from src.core.datastructures.tokens import Token
 from src.core.products_factory import Product
 from src.core.sanity_check.check_value import is_dust
@@ -143,7 +143,7 @@ class CurvePositionCalculator:
         )
 
         if not token_balance_to_calc_on:
-            return CurrentPosition(time=time_now, block_number=block_number)
+            return Position(time=time_now, block_number=block_number)
 
         current_position_of_tokens = []
         for i in range(self.num_underlying_tokens):
@@ -181,8 +181,9 @@ class CurvePositionCalculator:
             (x, y / 10 ** self.pool_token_contract["decimals"])
             for x, y in platform_token_balances.items()
         )
-        position_data = CurrentPosition(
+        position_data = Position(
             time=time_now,
+            block_number=block_number,
             token_balances=platform_token_balances,
             tokens=current_position_of_tokens,
         )
