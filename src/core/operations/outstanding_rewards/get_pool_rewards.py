@@ -3,14 +3,14 @@ from typing import List
 from brownie import network
 
 from src.core.datastructures.rewards import Rewards
-from src.core.products_factory import LiquidityPoolProduct
+from src.core.products_factory import Product
 from src.utils.contract_utils import init_contract
 
 
 class OutstandingRewardsCalculator:
     def __init__(
         self,
-        product: LiquidityPoolProduct,
+        product: Product,
         network_name: str = "mainnet",
     ):
         network.connect(network_name)
