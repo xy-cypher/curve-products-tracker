@@ -1,8 +1,12 @@
 import argparse
 from typing import Optional
 
+from brownie import web3
+from brownie.network import disconnect
+
 from src.core.operations.get_position import CurvePositionCalculator
 from src.core.products_factory import TRICRYPTO_V2
+from src.utils.network_utils import connect
 
 
 def parse_args():
@@ -38,23 +42,15 @@ def parse_args():
 
 def main():
     import json
-    from brownie._config import CONFIG
-    from brownie import network
-    from brownie import web3
 
     args = parse_args()
+
+    connect(args.node_provider_https)
 
     # if block_number is empty, then set it to latest block
     block_number = args.block_number
     if not block_number:
         block_number = web3.eth.block_number
-
-    # change network provider to user specified
-    CONFIG.networks["mainnet"]["host"] = args.node_provider_https
-    CONFIG.networks["mainnet"]["name"] = "Ethereum mainnet"
-
-    # connect to mainnet
-    network.connect("mainnet")
 
     print(f"User Address: {args.address}")
     print("Fetching all deposits to Curve v2 TriCrypto pool.")
@@ -66,7 +62,7 @@ def main():
     print(json.dumps(current_position.__dict__, indent=4, default=str))
 
     # disconnect
-    network.disconnect()
+    disconnect()
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from src.core.operations.outstanding_rewards.get_pool_rewards import (
+from src.core.operations.get_pool_rewards import (
     OutstandingRewardsCalculator,
 )
 from src.core.products_factory import TRICRYPTO_V2_POOL
