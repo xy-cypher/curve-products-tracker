@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Optional
 
 import pytz
-from brownie import network
 from brownie import web3
 
 from src.core.datastructures.current_position import Position
@@ -20,10 +19,7 @@ class CurvePositionCalculator:
     def __init__(
         self,
         product: Product,
-        network_name: str = "mainnet",
     ):
-
-        network.connect(network_name)
 
         self.pool_contract = init_contract(product.contract.addr)
 
@@ -133,7 +129,11 @@ class CurvePositionCalculator:
         if not block_number:
             block_number = web3.eth.block_number
 
-        time_now = pytz.utc.localize(datetime.utcnow())
+        tx_time = pytz.utc.localize(
+            datetime.utcfromtimestamp(
+                web3.eth.getBlock(block_number).timestamp
+            )
+        )
         platform_token_balances = self.get_token_and_gauge_bal(
             user_address=user_address, block_number=block_number
         )
@@ -143,7 +143,7 @@ class CurvePositionCalculator:
         )
 
         if not token_balance_to_calc_on:
-            return Position(time=time_now, block_number=block_number)
+            return Position(time=tx_time, block_number=block_number)
 
         current_position_of_tokens = []
         for i in range(self.num_underlying_tokens):
@@ -182,7 +182,7 @@ class CurvePositionCalculator:
             for x, y in platform_token_balances.items()
         )
         position_data = Position(
-            time=time_now,
+            time=tx_time,
             block_number=block_number,
             token_balances=platform_token_balances,
             tokens=current_position_of_tokens,
