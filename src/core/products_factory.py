@@ -10,6 +10,7 @@ from src.core.datastructures.base import BaseDataStruct
 class ContractInfo(BaseDataStruct):
     name: str = ""
     addr: str = ""
+    genesis_block: int = 0
 
 
 @dataclass
@@ -34,6 +35,7 @@ TRICRYPTO_V2 = Product(
     contract=ContractInfo(
         name="TriCrypto v2 Pool",
         addr="0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
+        genesis_block=12821148,
     ),
     token_contracts={
         "crv3crypto": ContractInfo(

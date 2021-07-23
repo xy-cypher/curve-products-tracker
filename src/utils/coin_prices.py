@@ -1,40 +1,13 @@
 from datetime import datetime
 from datetime import timedelta
 from time import sleep
-from typing import Union
 
 import pytz
-from brownie import network
 from pycoingecko import CoinGeckoAPI
 
 from src.core.datastructures.coin_price import CoinPrice
-from src.utils.constants import SUSHISWAP_ROUTER_CONTRACT
-from src.utils.contract_utils import init_contract
 
 COINGECKO = CoinGeckoAPI()
-
-
-def get_sushiswap_price(
-    token_in: str,
-    token_out: str,
-    num_tokens: int,
-    block_number: Union[str, int],
-):
-
-    # TODO: get historical swap quotes by block number using sushiswap router
-    was_connected_to_mainnet = network.show_active() == "mainnet"
-    if block_number != "latest" and network.show_active() != "archivenode":
-        network.connect("archivenode")
-
-    sushiswap_router = init_contract(SUSHISWAP_ROUTER_CONTRACT)
-    amounts_out = sushiswap_router.getAmountsOut(
-        int(num_tokens), [token_in, token_out]
-    ).call()
-
-    if was_connected_to_mainnet and network.show_active() != "mainnet":
-        network.connect("mainnet")
-
-    return amounts_out
 
 
 def get_current_price_coingecko(
