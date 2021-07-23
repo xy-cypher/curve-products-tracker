@@ -57,7 +57,7 @@ def main():
         block_number = web3.eth.block_number
 
     block_start = TRICRYPTO_V2.contract.genesis_block
-    query_blocks = list(range(block_start, block_number + 1, 1000))
+    query_blocks = list(range(block_start, block_number + 1, 100))
     if block_number not in query_blocks:
         query_blocks.append(block_number)
 
@@ -92,7 +92,11 @@ def main():
             continue
 
     position_data.dropna(inplace=True)
-    print(position_data)
+    position_data.set_index("time", inplace=True)
+    position_data.to_csv(
+        f"./{args.address}_{position_data.index[0]}_{position_data.index[-1]}"
+        f".csv"
+    )
 
     # disconnect
     disconnect()
