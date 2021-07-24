@@ -18,8 +18,6 @@ logging.getLogger(__name__)
 
 def get_liquidity_moved_for_tx(tx_hash: str, currency: str = "usd"):
 
-    network.connect("mainnet")
-
     tx_receipt = transaction.TransactionReceipt(tx_hash)
     date = pytz.utc.localize(datetime.utcfromtimestamp(tx_receipt.timestamp))
     contract_function = tx_receipt.fn_name

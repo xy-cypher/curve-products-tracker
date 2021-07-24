@@ -1,48 +1,63 @@
 import argparse
-import sys
 
+from src.core.operations.get_pool_txes import get_mint_txes
 from src.core.operations.read_liquidity_transaction import (
     get_liquidity_moved_for_tx,
 )
+from src.utils.network_utils import connect
 
 
-def parse_args(args):
+def parse_args():
     parser = argparse.ArgumentParser(
-        description="Get added or removed liquidity in transaction."
+        description="Get TriCrypto positions and deposit info for address."
     )
     parser.add_argument(
-        dest="tx_hash",
-        help="transaction hash",
+        "--address",
+        dest="address",
+        help="Address to fetch info for.",
         type=str,
     )
-    return parser.parse_args(args)
+    parser.add_argument(
+        "--node-provider-https",
+        dest="node_provider_https",
+        help="Node provider API. It must have Archive Node access (Alchemy). "
+        "Go to: https://alchemy.com/?r=0f41076514343f84 to get $100 of "
+        "credits. They also have a free tier with archival node access. "
+        "After you make an account, you can fetch your api key and enter "
+        "it in this parameter, "
+        "e.g. https://eth-mainnet.alchemyapi.io/v2/API_KEY",
+        type=str,
+    )
+
+    return parser.parse_args()
 
 
-def main(args):
-    """
-    example txes:
-    added liquidity:
-        1. 0xc77884d3af1782869772f57ecfadd62cc16087e0576092928eaaec4ada9bbfb3
-        2. 0xcc1695bab2ff8343e5b407aae3a97ea4ec37d9b5f4cb88847752eefaebfd0181
-
-    remove_liquidity:
-        1. 0x30fbbe236793dbb0538b0ad0751f99cb54b472ee399542903f5f0db2623bfa0f
-
-    remove_liquidity_one_coin:
-        1. 0x7d6a9f9365544c4abf889765b749c984b9e5e1632bafe2665229feec61b0b6a8
-    """
+def main():
+    from src.core.products_factory import TRICRYPTO_V2
     import json
 
-    args = parse_args(args)
-    print(f"Tx hash: {args.tx_hash}")
+    args = parse_args()
 
-    liquidity_tx = get_liquidity_moved_for_tx(args.tx_hash)
-    print(json.dumps(liquidity_tx.__dict__, indent=4, default=str))
+    # connect to custom note provider in args
+    connect(args.node_provider_https)
 
+    added_liquidity_txes = get_mint_txes(
+        user_address=args.address,
+        token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
+        from_block=TRICRYPTO_V2.contract.genesis_block,
+    )
 
-def run():
-    main(sys.argv[1:])
+    if not added_liquidity_txes:
+        pass
+
+    added_liquidity = []
+    for tx in added_liquidity_txes:
+        parsed_tx = get_liquidity_moved_for_tx(
+            tx_hash=tx["hash"][2:], currency="usd"
+        )
+        added_liquidity.append(parsed_tx)
+        print(json.dumps(parsed_tx.__dict__, indent=4, default=str))
 
 
 if __name__ == "__main__":
-    run()
+    main()

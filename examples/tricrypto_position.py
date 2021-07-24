@@ -6,6 +6,7 @@ from brownie.network import disconnect
 from pandas import DataFrame
 
 from src.core.datastructures.current_position import Position
+from src.core.operations.get_pool_txes import get_mint_txes
 from src.core.operations.get_position import CurvePositionCalculator
 from src.core.products_factory import TRICRYPTO_V2
 from src.utils.network_utils import connect
@@ -33,11 +34,11 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
-        "--block-number",
-        dest="block_number",
-        help="Block at which to calculate position.",
-        type=Optional[int],
-        default=None,
+        "--block-steps",
+        dest="block_steps",
+        help="How many blocks to skip between each query",
+        type=int,
+        default=100,
     )
     return parser.parse_args()
 
@@ -51,15 +52,22 @@ def main():
     # initialise tricrypto calculator
     tricrypto_calculator = CurvePositionCalculator(TRICRYPTO_V2)
 
-    # if block_number is empty, then set it to latest block
-    block_number = args.block_number
-    if not block_number:
-        block_number = web3.eth.block_number
+    # get address's first transaction:
+    added_liquidity_txes = get_mint_txes(
+        user_address=args.address,
+        token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
+        from_block=TRICRYPTO_V2.contract.genesis_block,
+    )
 
-    block_start = TRICRYPTO_V2.contract.genesis_block
-    query_blocks = list(range(block_start, block_number + 1, 100))
-    if block_number not in query_blocks:
-        query_blocks.append(block_number)
+    if not added_liquidity_txes:  # no txes made
+        pass
+
+    latest_block = web3.eth.block_number
+
+    block_start = int(added_liquidity_txes[0]["blockNum"], 16)
+    query_blocks = list(range(block_start, latest_block + 1, args.block_step))
+    if latest_block not in query_blocks:
+        query_blocks.append(latest_block)
 
     columns = [
         "block_number",
@@ -93,10 +101,7 @@ def main():
 
     position_data.dropna(inplace=True)
     position_data.set_index("time", inplace=True)
-    position_data.to_csv(
-        f"./{args.address}_{position_data.index[0]}_{position_data.index[-1]}"
-        f".csv"
-    )
+    position_data.to_csv(f"./{args.address}.csv")
 
     # disconnect
     disconnect()
