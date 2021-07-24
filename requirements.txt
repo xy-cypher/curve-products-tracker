@@ -112,6 +112,7 @@ pythx==1.6.1
 pytz==2021.1
 PyYAML==5.4.1
 pyzmq==22.1.0
+redis==3.5.3
 regex==2021.7.6
 requests==2.26.0
 rlp==1.2.0
