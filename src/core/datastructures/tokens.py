@@ -12,3 +12,11 @@ class Token(BaseDataStruct):
     num_tokens: float = 0
     value_tokens: float = 0
     coingecko_price: CoinPrice = CoinPrice()
+
+
+@dataclass
+class TokenContract(BaseDataStruct):
+
+    name: str = ""
+    address: str = ""
+    decimals: int = 18

@@ -6,7 +6,7 @@ import pytz as pytz
 from marshmallow_dataclass import dataclass
 
 from src.core.datastructures.base import BaseDataStruct
-from src.core.datastructures.rewards import ClaimedReward
+from src.core.datastructures.rewards import Rewards
 from src.core.datastructures.tokens import Token
 
 
@@ -25,9 +25,7 @@ class LiquidityTransaction(BaseDataStruct):
 @dataclass
 class HistoricalTransactions(BaseDataStruct):
 
-    claimed_rewards: List[ClaimedReward] = field(
-        default_factory=lambda: [ClaimedReward()]
-    )
+    claimed_rewards: List[Rewards] = field(default_factory=lambda: [Rewards()])
     liquidity_transactions: List[LiquidityTransaction] = field(
         default_factory=lambda: [LiquidityTransaction()]
     )

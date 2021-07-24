@@ -18,6 +18,7 @@
 .env.test.local
 .env.production.local
 .idea/
+*.csv
 
 npm-debug.log*
 yarn-debug.log*
@@ -26,3 +27,4 @@ yarn-error.log*
 # python
 __pycache__
 venv/
+.ipynb_checkpoints/

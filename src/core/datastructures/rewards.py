@@ -6,27 +6,11 @@ import pytz as pytz
 from marshmallow_dataclass import dataclass
 
 from src.core.datastructures.base import BaseDataStruct
-from src.core.datastructures.coin_price import CoinPrice
 from src.core.datastructures.tokens import Token
 
 
 @dataclass
 class Rewards(BaseDataStruct):
 
-    tokens: List[Token] = field(default_factory=lambda: [Token()])
-
-
-@dataclass
-class ClaimedReward(BaseDataStruct):
-
     date: datetime = pytz.utc.localize(datetime.utcnow())
-    rewards: Rewards = Rewards()
-
-
-@dataclass
-class OutstandingRewards(BaseDataStruct):
-
-    coingecko_price: CoinPrice = CoinPrice()
-    token: str = ""
-    num_tokens: float = 0
-    value_tokens: float = 0
+    tokens: List[Token] = field(default_factory=lambda: [Token()])
