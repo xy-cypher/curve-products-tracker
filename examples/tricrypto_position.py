@@ -65,7 +65,7 @@ def main():
     latest_block = web3.eth.block_number
 
     block_start = int(added_liquidity_txes[0]["blockNum"], 16)
-    query_blocks = list(range(block_start, latest_block + 1, args.block_step))
+    query_blocks = list(range(block_start, latest_block + 1, args.block_steps))
     if latest_block not in query_blocks:
         query_blocks.append(latest_block)
 
