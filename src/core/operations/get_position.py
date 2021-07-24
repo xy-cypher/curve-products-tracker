@@ -132,7 +132,7 @@ class CurvePositionCalculator:
 
         return token_balances
 
-    def get_current_position(
+    def get_position(
         self,
         user_address: str,
         block_number: Optional[int],

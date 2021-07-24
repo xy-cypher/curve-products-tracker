@@ -1,6 +1,6 @@
 import argparse
-from typing import Optional
 
+from brownie import multicall
 from brownie import web3
 from brownie.network import disconnect
 from pandas import DataFrame
@@ -89,7 +89,8 @@ def main():
         idx: int = idx
 
         try:
-            block_position = tricrypto_calculator.get_current_position(
+
+            block_position = tricrypto_calculator.get_position(
                 args.address, block_number=idx
             )
             position_data = shove_data(block_position, position_data, idx)
