@@ -26,15 +26,14 @@ def cache(function=None):
     return wrapper
 
 
-@cache
-def compute(num):
-    num = num * num
-    time.sleep(4)
-    return num * num
-
-
 def main():
     from timeit import default_timer as timer
+
+    @cache
+    def compute(num):
+        num = num * num
+        time.sleep(4)  # if cached, this will not sleep
+        return num * num
 
     start = timer()
     val = compute(445)
