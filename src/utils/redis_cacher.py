@@ -3,10 +3,11 @@ from functools import wraps
 
 import redis
 
-
+# todo: do we need a db per func?
 REDIS_CACHE = redis.Redis(host="localhost", port=6379, db=0)
 
 
+# todo: optimise code for scraper
 def cache(function=None):
     @wraps(function)
     def wrapper(*args, **kwargs):

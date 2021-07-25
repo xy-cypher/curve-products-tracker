@@ -12,6 +12,7 @@ from src.core.sanity_check.check_value import is_dust
 from src.utils.constants import SUSHISWAP_ROUTER_CONTRACT as DEX_ROUTER_ADDR
 from src.utils.constants import USDT
 from src.utils.contract_utils import init_contract
+from src.utils.redis_cacher import cache
 
 logging.getLogger(__name__)
 
@@ -21,6 +22,10 @@ class CurvePositionCalculator:
         self,
         product: Product,
     ):
+
+        logging.info("Initialising Position Calculator ...")
+
+        # todo: initialise using poolinfo or pool config yaml file
 
         self.pool_contract = init_contract(product.contract.addr)
 
@@ -63,6 +68,8 @@ class CurvePositionCalculator:
 
         # init sushiswap router contract for fetching prices wrt usdt
         self.dex_router = init_contract(DEX_ROUTER_ADDR)
+
+        logging.info("... done!")
 
     def calc_max_withdrawable_lp_tokens(
         self, total_tokens: int, block_number: int
@@ -136,11 +143,10 @@ class CurvePositionCalculator:
         self,
         user_address: str,
         block_number: Optional[int],
-    ) -> Position:
+    ) -> Position:  # todo: refactor position object to only accept time, numtokens price and thats it
+        print()
 
-        if not block_number:
-            block_number = web3.eth.block_number
-
+        # todo:the following contract call can be removed
         tx_time = pytz.utc.localize(
             datetime.utcfromtimestamp(
                 web3.eth.getBlock(block_number).timestamp
@@ -150,6 +156,8 @@ class CurvePositionCalculator:
             user_address=user_address, block_number=block_number
         )
         token_balance_to_calc_on = sum(platform_token_balances.values())
+
+        # todo: consider alternatives to the following
         token_balance_to_calc_on = self.calc_max_withdrawable_lp_tokens(
             token_balance_to_calc_on, block_number=block_number
         )
@@ -160,7 +168,10 @@ class CurvePositionCalculator:
         current_position_of_tokens = []
         for i in range(self.num_underlying_tokens):
 
+            # todo: redundant init contracts: can slow down code'''
             token_contract = init_contract(self.pool_contract.coins(i))
+
+            # todo: token name and token decimals can be hardcoded'''
             token_name = token_contract.name()
             token_decimals = token_contract.decimals()
 
@@ -172,6 +183,7 @@ class CurvePositionCalculator:
 
             num_tokens_float = num_tokens / 10 ** token_decimals
 
+            # todo: remove this method entirely for now. mvp style.
             value_tokens = self.get_dex_price_wrt_usdt(
                 num_tokens=num_tokens,
                 token_in_addr=token_contract.address,
@@ -193,19 +205,20 @@ class CurvePositionCalculator:
         )
         position_data = Position(
             time=tx_time,
-            block_number=block_number,
+            block_number=block_number,  # todo: maybe not needed
             token_balances=platform_token_balances,
             tokens=current_position_of_tokens,
         )
 
         return position_data
 
+    # todo: can be its own function. prices can be queried w.r.t each other
+    @cache
     def get_dex_price_wrt_usdt(
         self, num_tokens: int, token_in_addr: str, block_number: int
     ):
 
-        # TODO: use different value ... maybe coingecko or something that has
-        # archival access to prices.
+        # TODO: use curve pool get_dy method instead of sushiswap
 
         if token_in_addr == USDT.address:
             return num_tokens
