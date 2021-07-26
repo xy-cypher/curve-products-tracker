@@ -48,7 +48,9 @@ def main():
     participating_addrs = set([i["from"] for i in historical_txes])
 
     print("Total num participants in pool history: ", len(participating_addrs))
-    print("\n".join(participating_addrs))
+    with open("../data/pool_participants.txt", "w") as f:
+        addr_str = ", ".join(participating_addrs)
+        f.write(addr_str)
 
 
 if __name__ == "__main__":
