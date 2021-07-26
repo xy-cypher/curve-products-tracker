@@ -19,7 +19,6 @@ class LiquidityTransaction(BaseDataStruct):
     lp_tokens: float = 0
     block_number: int = 0
     transaction_fees_eth: float = 0
-    tokens: List[Token] = field(default_factory=lambda: [Token()])
 
 
 @dataclass

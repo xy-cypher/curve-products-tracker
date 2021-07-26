@@ -1,13 +1,12 @@
-from brownie import network
+import os
+from typing import List
+from typing import Union
+
 from brownie.network.contract import Contract
-from brownie.network.contract import ContractNotFound
 from etherscan.accounts import Account
 from etherscan.client import Client
-from hexbytes import HexBytes
 from web3 import Web3
 from web3.exceptions import InvalidAddress
-
-from src.utils.misc_utils import w3_infura
 
 
 def init_contract(address: str):
@@ -54,4 +53,30 @@ class TransactionScraper(Account):
             ]:
                 relevant_txes.append(tx)
 
-        return relevant_txes
+        return
+
+    def get_tx(
+        self,
+        start_block: int = 0,
+        end_block: Union[str, int] = "latest",
+        sort: str = "asc",
+    ):
+
+        self.url_dict[self.ACTION] = "txlist"
+        self.url_dict[self.SORT] = sort
+        self.url_dict[self.START_BLOCK] = str(start_block)
+        self.url_dict[self.END_BLOCK] = str(end_block)
+
+        self.build_url()
+        req = self.connect()
+
+        return req["result"]
+
+
+def get_all_txes(address: str, from_block: int = 0) -> List:
+
+    tx_scraper = TransactionScraper(
+        address=address, api_key=os.environ["ETHERSCAN_API_KEY"]
+    )
+
+    return tx_scraper.get_tx(start_block=from_block)
