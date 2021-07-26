@@ -9,10 +9,7 @@ from src.core.datastructures.current_position import Position
 from src.core.datastructures.tokens import Token
 from src.core.products_factory import Product
 from src.core.sanity_check.check_value import is_dust
-from src.utils.constants import SUSHISWAP_ROUTER_CONTRACT as DEX_ROUTER_ADDR
-from src.utils.constants import USDT
 from src.utils.contract_utils import init_contract
-from src.utils.redis_cacher import cache
 
 logging.getLogger(__name__)
 
@@ -41,12 +38,21 @@ class CurvePositionCalculator:
                 "decimals": token_contract.decimals(),
             }
 
-        # get num underlying tokens
-        self.num_underlying_tokens = 0
+        # initialise underlying assets info
+        self.lp_assets = []
         for i in range(100):
             try:
-                self.pool_contract.coins(i)
-                self.num_underlying_tokens += 1
+                asset_addr = self.pool_contract.coins(i)
+                asset_contract = init_contract(asset_addr)
+                asset_decimals = asset_contract.decimals()
+                asset_name = asset_contract.name()
+                self.lp_assets.append(
+                    {
+                        "name": asset_name,
+                        "contract": asset_contract,
+                        "decimals": asset_decimals,
+                    }
+                )
             except ValueError:  # max index reached, hence count is num tokens
                 break
 
@@ -65,9 +71,6 @@ class CurvePositionCalculator:
             gauge = {"contract": gauge_contract, "decimals": decimals}
 
             self.gauge_contracts[contract_name] = gauge
-
-        # init sushiswap router contract for fetching prices wrt usdt
-        self.dex_router = init_contract(DEX_ROUTER_ADDR)
 
         logging.info("... done!")
 
@@ -101,6 +104,8 @@ class CurvePositionCalculator:
     ) -> dict:
         """We calculate position on the following token balance:
         (tokens in gauge + free lp tokens)
+
+        # todo: if this is needed to be optimised, consider using alchemy apis
 
         :param block_number:
         :param user_address: web3 address of the user
@@ -166,36 +171,23 @@ class CurvePositionCalculator:
             return Position(time=tx_time, block_number=block_number)
 
         current_position_of_tokens = []
-        for i in range(self.num_underlying_tokens):
-
-            # todo: redundant init contracts: can slow down code'''
-            token_contract = init_contract(self.pool_contract.coins(i))
-
-            # todo: token name and token decimals can be hardcoded'''
-            token_name = token_contract.name()
-            token_decimals = token_contract.decimals()
+        for asset_idx, asset in enumerate(self.lp_assets):
 
             # calculate how many tokens the user would get if they withdrew
             # all of their liquidity in a single coin.
             num_tokens = self.pool_contract.calc_withdraw_one_coin(
-                token_balance_to_calc_on, i, block_identifier=block_number
+                token_balance_to_calc_on,
+                asset_idx,
+                block_identifier=block_number,
             )
 
-            num_tokens_float = num_tokens / 10 ** token_decimals
-
-            # todo: remove this method entirely for now. mvp style.
-            value_tokens = self.get_dex_price_wrt_usdt(
-                num_tokens=num_tokens,
-                token_in_addr=token_contract.address,
-                block_number=block_number,
-            )
+            num_tokens_float = num_tokens / 10 ** asset["decimals"]
 
             current_position_of_tokens.append(
                 Token(
-                    name=token_name,
-                    address=token_contract.address,
+                    name=asset["name"],
+                    address=asset["contract"].address,
                     num_tokens=num_tokens_float,
-                    value_tokens=value_tokens,
                 ),
             )
 
@@ -211,22 +203,3 @@ class CurvePositionCalculator:
         )
 
         return position_data
-
-    # todo: can be its own function. prices can be queried w.r.t each other
-    @cache
-    def get_dex_price_wrt_usdt(
-        self, num_tokens: int, token_in_addr: str, block_number: int
-    ):
-
-        # TODO: use curve pool get_dy method instead of sushiswap
-
-        if token_in_addr == USDT.address:
-            return num_tokens
-
-        amounts_outs = self.dex_router.getAmountsOut(
-            num_tokens,
-            [token_in_addr, USDT.address],
-            block_identifier=block_number,
-        )
-
-        return amounts_outs[1] / 10 ** USDT.decimals

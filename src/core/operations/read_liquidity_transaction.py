@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Tuple
 
 import pytz
-from brownie import network
 from brownie import ZERO_ADDRESS
 from brownie.network import transaction
 from brownie.network.event import EventDict

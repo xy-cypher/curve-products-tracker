@@ -102,7 +102,7 @@ def main():
 
     position_data.dropna(inplace=True)
     position_data.set_index("time", inplace=True)
-    position_data.to_csv(f"./{args.address}.csv")
+    position_data.to_csv(f"../data/anon_data.csv")
 
     # disconnect
     disconnect()

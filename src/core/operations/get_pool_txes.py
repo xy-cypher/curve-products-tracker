@@ -4,8 +4,6 @@ from typing import List
 import requests as requests
 from brownie import ZERO_ADDRESS
 
-from src.utils.network_utils import connect
-
 
 def get_mint_txes(user_address: str, token_addr: str, from_block: int) -> List:
 
