@@ -87,22 +87,14 @@ def main():
     for idx, _ in position_data.iterrows():
 
         idx: int = idx
-
-        try:
-
-            block_position = tricrypto_calculator.get_position(
-                args.address, block_number=idx
-            )
-            position_data = shove_data(block_position, position_data, idx)
-
-            print(f"Calculated position in block {idx}.")
-
-        except ValueError:
-            continue
+        block_position = tricrypto_calculator.get_position(
+            args.address, block_number=idx
+        )
+        position_data = shove_data(block_position, position_data, idx)
 
     position_data.dropna(inplace=True)
     position_data.set_index("time", inplace=True)
-    position_data.to_csv(f"./{args.address}.csv")
+    position_data.to_csv(f"../data/anon_data.csv")
 
     # disconnect
     disconnect()
@@ -114,7 +106,6 @@ def shove_data(
 
     try:
         position_data.loc[idx, "block_number"] = block_position.block_number
-        position_data.loc[idx, "time"] = block_position.time
         position_data.loc[idx, "lp_balance"] = block_position.token_balances[
             "liquidity_pool"
         ]

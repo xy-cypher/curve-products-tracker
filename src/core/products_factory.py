@@ -17,6 +17,8 @@ class ContractInfo(BaseDataStruct):
 class Product(BaseDataStruct):
     name: str = ""
     contract: ContractInfo = ContractInfo()
+
+    # todo: incorporate poolinfo
     token_contracts: Dict[str, ContractInfo] = field(
         default_factory=lambda: {"": ContractInfo()}
     )
