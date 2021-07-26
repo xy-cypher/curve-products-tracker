@@ -53,7 +53,7 @@ class CurvePositionCalculator:
                         "decimals": asset_decimals,
                     }
                 )
-            except ValueError:  # max index reached, hence count is num tokens
+            except ValueError:  # max index reached
                 break
 
         # initialise auxiliary contracts:
@@ -74,38 +74,11 @@ class CurvePositionCalculator:
 
         logging.info("... done!")
 
-    def calc_max_withdrawable_lp_tokens(
-        self, total_tokens: int, block_number: int
-    ):
-        """This is just to ensure that the total tokens a token holder has
-        is actually withdrawable: if they are a whale, they may not be able
-        to withdraw all of their liquidity but a certain percentage of it
-
-        :param block_number:
-        :param total_tokens:
-        :return:
-        """
-
-        withdraw_fraction = [x * 0.01 for x in range(0, 101)[::-1]]
-        for fraction in withdraw_fraction:
-            try:
-                num_withdrawable_lp_tokens = fraction * total_tokens
-                _ = self.pool_contract.calc_withdraw_one_coin(
-                    fraction * total_tokens, 0, block_identifier=block_number
-                )
-                return num_withdrawable_lp_tokens
-            except ValueError:
-                continue
-
-        return 0
-
     def get_token_and_gauge_bal(
         self, user_address: str, block_number: int
     ) -> dict:
         """We calculate position on the following token balance:
         (tokens in gauge + free lp tokens)
-
-        # todo: if this is needed to be optimised, consider using alchemy apis
 
         :param block_number:
         :param user_address: web3 address of the user
@@ -148,27 +121,15 @@ class CurvePositionCalculator:
         self,
         user_address: str,
         block_number: Optional[int],
-    ) -> Position:  # todo: refactor position object to only accept time, numtokens price and thats it
-        print()
+    ) -> Position:
 
-        # todo:the following contract call can be removed
-        tx_time = pytz.utc.localize(
-            datetime.utcfromtimestamp(
-                web3.eth.getBlock(block_number).timestamp
-            )
-        )
         platform_token_balances = self.get_token_and_gauge_bal(
             user_address=user_address, block_number=block_number
         )
         token_balance_to_calc_on = sum(platform_token_balances.values())
 
-        # todo: consider alternatives to the following
-        token_balance_to_calc_on = self.calc_max_withdrawable_lp_tokens(
-            token_balance_to_calc_on, block_number=block_number
-        )
-
         if not token_balance_to_calc_on:
-            return Position(time=tx_time, block_number=block_number)
+            return Position(block_number=block_number)
 
         current_position_of_tokens = []
         for asset_idx, asset in enumerate(self.lp_assets):
@@ -196,8 +157,7 @@ class CurvePositionCalculator:
             for x, y in platform_token_balances.items()
         )
         position_data = Position(
-            time=tx_time,
-            block_number=block_number,  # todo: maybe not needed
+            block_number=block_number,
             token_balances=platform_token_balances,
             tokens=current_position_of_tokens,
         )

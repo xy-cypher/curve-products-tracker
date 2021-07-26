@@ -12,9 +12,6 @@ from src.utils.misc_utils import w3_infura
 
 def init_contract(address: str):
 
-    if not address_is_contract(address):
-        raise ContractNotFound
-
     try:
         contract = Contract(address_or_alias=address)
     except InvalidAddress:
@@ -58,7 +55,3 @@ class TransactionScraper(Account):
                 relevant_txes.append(tx)
 
         return relevant_txes
-
-
-def address_is_contract(address: str) -> bool:
-    return w3_infura.eth.getCode(address) > HexBytes(0)
