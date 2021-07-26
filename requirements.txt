@@ -7,3 +7,5 @@ pytz
 redis
 requests
 web3
+pandas
+py-etherscan-api
