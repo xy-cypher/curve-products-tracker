@@ -25,44 +25,12 @@ def get_liquidity_moved_for_tx(tx_hash: str, currency: str = "usd"):
 
     if contract_function == "add_liquidity":
         lp_tokens = get_minted_tokens(events)
-        underlying_tokens = get_added_tokens(events)
     elif contract_function == "remove_liquidity":
         lp_tokens = get_burned_tokens(events)
-        underlying_tokens = get_removed_tokens(events)
     elif contract_function == "remove_liquidity_one_coin":
         lp_tokens = get_burned_tokens(events)
-        underlying_tokens = get_removed_tokens_one(events)
     else:
-
         return LiquidityTransaction()
-
-    token_objects = []
-    pool_contract = init_contract(tx_receipt.receiver)
-    for index, num_tokens in enumerate(underlying_tokens):
-
-        token_address = pool_contract.coins(index)
-        token_contract = init_contract(token_address)
-        token_name = token_contract.name()
-
-        coingecko_price = get_historical_price_coingecko(
-            token_contract=token_contract,
-            query_datetime=date,
-            currency=currency,
-        )
-
-        value_tokens = (
-            num_tokens / 10 ** token_contract.decimals()
-        ) * coingecko_price.quote
-
-        token_objects.append(
-            Token(
-                name=token_name,
-                address=token_address,
-                num_tokens=num_tokens,
-                coingecko_price=coingecko_price,
-                value_tokens=value_tokens,
-            )
-        )
 
     return LiquidityTransaction(
         date=date,
@@ -73,7 +41,6 @@ def get_liquidity_moved_for_tx(tx_hash: str, currency: str = "usd"):
         transaction_fees_eth=tx_receipt.gas_used
         * 1e-18
         * tx_receipt.gas_price,
-        tokens=token_objects,
     )
 
 

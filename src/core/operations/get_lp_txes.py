@@ -5,9 +5,15 @@ import requests as requests
 from brownie import ZERO_ADDRESS
 
 
-def get_mint_txes(user_address: str, token_addr: str, from_block: int) -> List:
+def get_mint_or_burn_txs(user_address: str, token_addr: str, from_block: int, tx_type: str = 'mint') -> List:
 
-    minted_lp_tokens = requests.post(
+    from_addr = ZERO_ADDRESS
+    to_addr = user_address
+    if tx_type == "burn":
+        from_addr = user_address
+        to_addr = ZERO_ADDRESS
+
+    tx_lp_tokens = requests.post(
         "https://eth-mainnet.alchemyapi.io/v2/"
         + os.environ["ALCHEMY_API_KEY"],
         json={
@@ -18,8 +24,8 @@ def get_mint_txes(user_address: str, token_addr: str, from_block: int) -> List:
                 {
                     "fromBlock": hex(from_block),
                     "toBlock": "latest",
-                    "fromAddress": ZERO_ADDRESS,
-                    "toAddress": user_address,
+                    "fromAddress": from_addr,
+                    "toAddress": to_addr,
                     "contractAddresses": [token_addr],
                     "category": ["external", "token"],
                 }
@@ -27,6 +33,7 @@ def get_mint_txes(user_address: str, token_addr: str, from_block: int) -> List:
         },
     )
 
-    mint_txes = minted_lp_tokens.json()["result"]["transfers"]
+    lp_txes = tx_lp_tokens.json()["result"]["transfers"]
 
-    return mint_txes
+    return lp_txes
+

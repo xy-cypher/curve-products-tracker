@@ -1,19 +1,17 @@
 import argparse
 
-from src.core.operations.get_lp_txes import get_mint_txes
-from src.core.operations.read_liquidity_transaction import (
-    get_liquidity_moved_for_tx,
-)
+from src.utils.contract_utils import get_all_txes
 from src.utils.network_utils import connect
 
 
 def parse_args():
+
     parser = argparse.ArgumentParser(
-        description="Get TriCrypto positions and deposit info for address."
+        description="Get current Pool Liquidity Providers."
     )
     parser.add_argument(
-        "--address",
-        dest="address",
+        "--pool_address",
+        dest="pool_address",
         help="Address to fetch info for.",
         type=str,
     )
@@ -28,35 +26,30 @@ def parse_args():
         "e.g. https://eth-mainnet.alchemyapi.io/v2/API_KEY",
         type=str,
     )
-
+    parser.add_argument(
+        "--from-block",
+        dest="from_block",
+        type=int,
+        default=100,
+    )
     return parser.parse_args()
 
 
 def main():
-    from src.core.products_factory import TRICRYPTO_V2
-    import json
-
     args = parse_args()
 
     # connect to custom note provider in args
     connect(args.node_provider_https)
 
-    added_liquidity_txes = get_mint_txes(
-        user_address=args.address,
-        token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
-        from_block=TRICRYPTO_V2.contract.genesis_block,
+    historical_txes = get_all_txes(
+        from_block=args.from_block,
+        address=args.pool_address
     )
 
-    if not added_liquidity_txes:
-        pass
+    participating_addrs = set([i['from'] for i in historical_txes])
 
-    added_liquidity = []
-    for tx in added_liquidity_txes:
-        parsed_tx = get_liquidity_moved_for_tx(
-            tx_hash=tx["hash"][2:], currency="usd"
-        )
-        added_liquidity.append(parsed_tx)
-        print(json.dumps(parsed_tx.__dict__, indent=4, default=str))
+    print('Total num participants in pool history: ', len(participating_addrs))
+    print('\n'.join(participating_addrs))
 
 
 if __name__ == "__main__":

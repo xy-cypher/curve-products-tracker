@@ -6,7 +6,7 @@ from brownie.network import disconnect
 from pandas import DataFrame
 
 from src.core.datastructures.current_position import Position
-from src.core.operations.get_pool_txes import get_mint_txes
+from src.core.operations.get_lp_txes import get_mint_txes
 from src.core.operations.get_position import CurvePositionCalculator
 from src.core.products_factory import TRICRYPTO_V2
 from src.utils.network_utils import connect
