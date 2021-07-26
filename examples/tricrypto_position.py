@@ -69,8 +69,6 @@ def main():
     if latest_block not in query_blocks:
         query_blocks.append(latest_block)
 
-    query_blocks = [query_blocks[1]]
-
     columns = [
         "block_number",
         "time",
