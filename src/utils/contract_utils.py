@@ -1,5 +1,6 @@
 import os
-from typing import Union, List
+from typing import List
+from typing import Union
 
 from brownie.network.contract import Contract
 from etherscan.accounts import Account
@@ -57,7 +58,7 @@ class TransactionScraper(Account):
     def get_tx(
         self,
         start_block: int = 0,
-        end_block: Union[str, int] = 'latest',
+        end_block: Union[str, int] = "latest",
         sort: str = "asc",
     ):
 

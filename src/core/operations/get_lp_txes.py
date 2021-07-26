@@ -5,7 +5,9 @@ import requests as requests
 from brownie import ZERO_ADDRESS
 
 
-def get_mint_or_burn_txs(user_address: str, token_addr: str, from_block: int, tx_type: str = 'mint') -> List:
+def get_mint_or_burn_txs(
+    user_address: str, token_addr: str, from_block: int, tx_type: str = "mint"
+) -> List:
 
     from_addr = ZERO_ADDRESS
     to_addr = user_address
@@ -36,4 +38,3 @@ def get_mint_or_burn_txs(user_address: str, token_addr: str, from_block: int, tx
     lp_txes = tx_lp_tokens.json()["result"]["transfers"]
 
     return lp_txes
-

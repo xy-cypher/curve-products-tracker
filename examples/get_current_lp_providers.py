@@ -42,14 +42,13 @@ def main():
     connect(args.node_provider_https)
 
     historical_txes = get_all_txes(
-        from_block=args.from_block,
-        address=args.pool_address
+        from_block=args.from_block, address=args.pool_address
     )
 
-    participating_addrs = set([i['from'] for i in historical_txes])
+    participating_addrs = set([i["from"] for i in historical_txes])
 
-    print('Total num participants in pool history: ', len(participating_addrs))
-    print('\n'.join(participating_addrs))
+    print("Total num participants in pool history: ", len(participating_addrs))
+    print("\n".join(participating_addrs))
 
 
 if __name__ == "__main__":

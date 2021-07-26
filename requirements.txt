@@ -1,11 +1,11 @@
 black
 eth-brownie
 marshmallow-dataclass
+pandas
 pre-commit
+py-etherscan-api
 pycoingecko
 pytz
 redis
 requests
 web3
-pandas
-py-etherscan-api
