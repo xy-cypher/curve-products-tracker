@@ -1,6 +1,10 @@
 import argparse
+import json
+
+import brownie
 
 from src.utils.contract_utils import get_all_txes
+from src.utils.contract_utils import init_contract
 from src.utils.network_utils import connect
 
 
@@ -10,8 +14,20 @@ def parse_args():
         description="Get current Pool Liquidity Providers."
     )
     parser.add_argument(
-        "--pool_address",
-        dest="pool_address",
+        "--pool-token-address",
+        dest="pool_token_address",
+        help="Address to fetch info for.",
+        type=str,
+    )
+    parser.add_argument(
+        "--convex-gauge-address",
+        dest="convex_gauge_addr",
+        help="Address to fetch info for.",
+        type=str,
+    )
+    parser.add_argument(
+        "--curve-gauge-address",
+        dest="curve_gauge_addr",
         help="Address to fetch info for.",
         type=str,
     )
@@ -41,16 +57,57 @@ def main():
     # connect to custom note provider in args
     connect(args.node_provider_https)
 
+    pool_token_contract = init_contract(args.pool_token_address)
+    gauge_contract_convex = init_contract(args.convex_gauge_addr)
+    gauge_contract_curve = init_contract(args.curve_gauge_addr)
+
+    current_block = brownie.web3.eth.block_number
+
+    # todo: implement for pool token that is not using etherscan (limited to previous 10000 entries)
     historical_txes = get_all_txes(
-        from_block=args.from_block, address=args.pool_address
+        start_block=args.from_block,
+        end_block=current_block,
+        address=pool_token_contract.address,
     )
 
     participating_addrs = set([i["from"] for i in historical_txes])
 
-    print("Total num participants in pool history: ", len(participating_addrs))
-    with open("../data/pool_participants.txt", "w") as f:
-        addr_str = ", ".join(participating_addrs)
-        f.write(addr_str)
+    participating_user_balance = {}
+    for staking_contract in [
+        pool_token_contract,
+        gauge_contract_convex,
+        gauge_contract_curve,
+    ]:
+        if not staking_contract:
+            continue
+
+        with brownie.multicall(address=staking_contract.address):
+            balances = [
+                staking_contract.balanceOf(addr)
+                for addr in participating_addrs
+            ]
+            user_balance = dict(zip(participating_addrs, balances))
+        participating_user_balance[staking_contract.address] = user_balance
+
+    # get all participants with non-zero balances in any of the three pools
+    active_participants = participating_user_balance[
+        list(participating_user_balance.keys())[0]
+    ].keys()
+    active_balances = {}
+    for addr in active_participants:
+        user_balance = {}
+        for pool_addr in participating_user_balance.keys():
+            user_balance_in_pool = int(
+                participating_user_balance[pool_addr][addr]
+            )
+            if user_balance_in_pool:
+                user_balance[str(pool_addr)] = user_balance_in_pool
+        if sum(user_balance.values()):
+            active_balances[str(addr)] = user_balance
+
+    print("Total num participants in pool history: ", len(active_balances))
+    with open("../data/pool_participants.json", "w") as f:
+        json.dump(active_balances, f, indent=4)
 
 
 if __name__ == "__main__":

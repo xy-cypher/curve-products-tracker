@@ -1,5 +1,6 @@
 import os
 from typing import List
+from typing import Optional
 from typing import Union
 
 from brownie.network.contract import Contract
@@ -9,12 +10,13 @@ from web3 import Web3
 from web3.exceptions import InvalidAddress
 
 
-def init_contract(address: str):
+def init_contract(address: str) -> Contract:
+
+    if not Web3.isAddress(address):
+        return None
 
     try:
         contract = Contract(address_or_alias=address)
-    except InvalidAddress:
-        raise
     except Exception as e:
         print(e)
         contract = Contract.from_explorer(address=address)
@@ -73,10 +75,13 @@ class TransactionScraper(Account):
         return req["result"]
 
 
-def get_all_txes(address: str, from_block: int = 0) -> List:
+def get_all_txes(
+    address: str, start_block: int = 0, end_block: Union[str, int] = "latest"
+) -> List:
 
     tx_scraper = TransactionScraper(
         address=address, api_key=os.environ["ETHERSCAN_API_KEY"]
     )
 
-    return tx_scraper.get_tx(start_block=from_block)
+    txes = tx_scraper.get_tx(start_block=start_block, end_block=end_block)
+    return txes
