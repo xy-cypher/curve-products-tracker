@@ -6,7 +6,7 @@ from brownie.network import disconnect
 from pandas import DataFrame
 
 from src.core.datastructures.current_position import Position
-from src.core.operations.get_lp_txes import get_mint_txes
+from src.core.operations.get_lp_txes import get_mint_or_burn_txs
 from src.core.operations.get_position import CurvePositionCalculator
 from src.core.products_factory import TRICRYPTO_V2
 from src.utils.network_utils import connect
@@ -53,10 +53,11 @@ def main():
     tricrypto_calculator = CurvePositionCalculator(TRICRYPTO_V2)
 
     # get address's first transaction:
-    added_liquidity_txes = get_mint_txes(
+    added_liquidity_txes = get_mint_or_burn_txs(
         user_address=args.address,
         token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
         from_block=TRICRYPTO_V2.contract.genesis_block,
+        tx_type="mint",
     )
 
     if not added_liquidity_txes:  # no txes made
