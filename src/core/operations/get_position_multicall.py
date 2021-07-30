@@ -1,12 +1,9 @@
 import logging
 from typing import Any
 from typing import Dict
-from typing import List
 
 import brownie
 
-from src.core.datastructures.current_position import Position
-from src.core.datastructures.tokens import Token
 from src.core.products_factory import Product
 from src.utils.contract_utils import init_contract
 
@@ -98,16 +95,29 @@ class CurvePositionCalculatorMultiCall:
             ]
             current_position_of_tokens[asset["name"]] = num_tokens_float
 
-        user_positions = self.__groom_user_positions(
+        block_positions = self.__groom_user_positions(
             user_addrs=lp_balances.keys(),
             current_positions=current_position_of_tokens,
         )
 
-        return user_positions
+        return block_positions
 
-    @staticmethod
+    def get_oracle_prices_dict(self):
+
+        oracle_prices = {}
+        n_coin = 0
+        for asset in self.lp_assets:
+            if asset["name"] == "Tether USD":
+                continue
+            oracle_prices[asset["name"]] = (
+                self.pool_contract.price_oracle(n_coin) / 10 ** 18
+            )
+            n_coin += 1
+
+        return oracle_prices
+
     def __groom_user_positions(
-        user_addrs: Any, current_positions: Dict
+        self, user_addrs: Any, current_positions: Dict
     ) -> Dict:
 
         user_positions = {}
@@ -118,4 +128,11 @@ class CurvePositionCalculatorMultiCall:
 
             user_positions[addr] = user_position
 
-        return user_positions
+        asset_oracle_prices = self.get_oracle_prices_dict()
+
+        block_data = {
+            "price_oracle": asset_oracle_prices,
+            "positions": user_positions,
+        }
+
+        return block_data
