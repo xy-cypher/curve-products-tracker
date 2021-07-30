@@ -141,8 +141,6 @@ def main():
                     f"No transactions since {from_block}. Positions did not "
                     f"change. Modifying cache block number and re-cacheing."
                 )
-
-                from_block = current_block
                 modified_cache = {
                     current_block: cached_positions[block_in_cache]
                 }
