@@ -1,6 +1,5 @@
 import argparse
 
-from brownie import multicall
 from brownie import web3
 from brownie.network import disconnect
 from pandas import DataFrame

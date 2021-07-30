@@ -83,5 +83,6 @@ def get_all_txes(
         address=address, api_key=os.environ["ETHERSCAN_API_KEY"]
     )
 
+    # todo: intervals should be segmented to 10000 block ranges
     txes = tx_scraper.get_tx(start_block=start_block, end_block=end_block)
     return txes

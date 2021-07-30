@@ -1,12 +1,23 @@
 import argparse
 import json
+import logging
+import os
+import time
 
 import brownie
+from etherscan.client import EmptyResponse
 
 from src.core.sanity_check.check_value import is_dust
 from src.utils.contract_utils import get_all_txes
 from src.utils.contract_utils import init_contract
 from src.utils.network_utils import connect
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s,%(msecs)d-4s %(levelname)-4s [%(filename)s %(module)s:%(lineno)d] :: %(message)s",
+    datefmt="%Y-%m-%d:%H:%M:%S",
+)
 
 
 def parse_args():
@@ -49,70 +60,169 @@ def parse_args():
         type=int,
         default=100,
     )
+    parser.add_argument(
+        "--sleep-time-seconds",
+        dest="sleep_time_seconds",
+        type=int,
+        default=60,
+    )
+    parser.add_argument(
+        "--cache-filename",
+        dest="cache_filename",
+        type=str,
+        default="../data/pool_participants.json",
+    )
     return parser.parse_args()
+
+
+def load_cached_positions(cache_filename: str):
+
+    with open(cache_filename, "r") as f:
+        cached_positions = json.load(f)
+
+    return cached_positions
+
+
+def cache_positions(active_balances_block: dict, cache_filename: str):
+    # todo: maybe use a redis cache instead of saving it
+    with open(cache_filename, "w") as f:
+        json.dump(active_balances_block, f, indent=4)
 
 
 def main():
     args = parse_args()
 
     # connect to custom note provider in args
+    logging.info("Connecting to Node Provider ...")
     connect(args.node_provider_https)
+    logging.info("... connected!")
 
+    logging.info("Initialising pool and gauge contracts ...")
     pool_token_contract = init_contract(args.pool_token_address)
     gauge_contract_convex = init_contract(args.convex_gauge_addr)
     gauge_contract_curve = init_contract(args.curve_gauge_addr)
+    logging.info("... initialised!")
 
-    current_block = brownie.web3.eth.block_number
+    from_block = args.from_block
+    cached_positions = {}
+    block_in_cache = "None"
+    if os.path.exists(args.cache_filename):
+        logging.info(
+            "Cached positions exist. Loading block number of last query."
+        )
+        cached_positions = load_cached_positions(args.cache_filename)
+        block_in_cache = list(cached_positions.keys())[0]
+        from_block = int(block_in_cache)
 
-    # todo: implement for pool token that is not using etherscan (limited to previous 10000 entries)
-    historical_txes = get_all_txes(
-        start_block=args.from_block,
-        end_block=current_block,
-        address=pool_token_contract.address,
-    )
+    while True:
 
-    participating_addrs = set([i["from"] for i in historical_txes])
+        logging.info("Awake.")
 
-    participating_user_balance = {}
-    for staking_contract in [
-        pool_token_contract,
-        gauge_contract_convex,
-        gauge_contract_curve,
-    ]:
-        if not staking_contract:
+        if not brownie.network.is_connected():
+
+            connect(args.node_provider_https)
+
+        current_block = brownie.web3.eth.block_number
+        logging.info(f"Current block: {current_block}")
+        logging.info(f"Fetching Etherscan Txes from block {from_block} ...")
+
+        try:
+
+            historical_txes = get_all_txes(
+                start_block=from_block - 6006000,
+                end_block=current_block,
+                address=pool_token_contract.address,
+            )
+
+        except EmptyResponse:
+
+            if cached_positions:
+                logging.info(
+                    f"No transactions since {from_block}. Positions did not "
+                    f"change. Modifying cache block number and re-cacheing."
+                )
+
+                from_block = current_block
+                modified_cache = {
+                    current_block: cached_positions[block_in_cache]
+                }
+                cache_positions(modified_cache, args.cache_filename)
+
+            # adjust from_block to current_block
+            from_block = current_block
+
+            logging.info("Disconnecting Brownie")
+            brownie.network.disconnect()
+
+            logging.info(f"Sleeping for {args.sleep_time_seconds} seconds.")
+            time.sleep(args.sleep_time_seconds)
+
             continue
 
-        with brownie.multicall(
-            address=staking_contract.address, block_identifier=current_block
-        ):
-            balances = [
-                staking_contract.balanceOf(addr)
-                for addr in participating_addrs
-            ]
-            user_balance = dict(zip(participating_addrs, balances))
-        participating_user_balance[staking_contract.address] = user_balance
+        logging.info(
+            f"... done! Number of transactions: {len(historical_txes)}"
+        )
 
-    # get all participants with non-zero balances in any of the three pools
-    active_participants = participating_user_balance[
-        list(participating_user_balance.keys())[0]
-    ].keys()
-    active_balances = {}
-    for addr in active_participants:
-        user_balance = {}
-        for pool_addr in participating_user_balance.keys():
-            user_balance_in_pool = int(
-                participating_user_balance[pool_addr][addr]
-            )
-            if user_balance_in_pool:
-                user_balance[str(pool_addr)] = user_balance_in_pool
-        if not is_dust(sum(user_balance.values()), token_decimal=18):
-            active_balances[str(addr)] = user_balance
+        participating_addrs = set([i["from"] for i in historical_txes])
+        if cached_positions:
+            participating_addrs.update(cached_positions[block_in_cache].keys())
 
-    active_balances_block = {current_block: active_balances}
+        logging.info(f"Number of unique addresses: {len(participating_addrs)}")
+        logging.info("Fetching balances ...")
+        active_user_balance = {}
+        for staking_contract in [
+            pool_token_contract,
+            gauge_contract_convex,
+            gauge_contract_curve,
+        ]:
+            if not staking_contract:
+                continue
 
-    print("Total num participants in pool history: ", len(active_balances))
-    with open("../data/pool_participants.json", "w") as f:
-        json.dump(active_balances_block, f, indent=4)
+            with brownie.multicall(
+                address=staking_contract.address,
+                block_identifier=current_block,
+            ):
+                balances = [
+                    staking_contract.balanceOf(addr)
+                    for addr in participating_addrs
+                ]
+                user_balance = dict(zip(participating_addrs, balances))
+            active_user_balance[staking_contract.address] = user_balance
+
+        # get all participants with non-zero balances in any of the three
+        # pools
+        active_participants = active_user_balance[
+            list(active_user_balance.keys())[0]
+        ].keys()
+
+        active_balances = {}
+        for addr in active_participants:
+            user_balance = {}
+            for pool_addr in active_user_balance.keys():
+                user_balance_in_pool = int(
+                    active_user_balance[pool_addr][addr]
+                )
+                if user_balance_in_pool:
+                    user_balance[str(pool_addr)] = user_balance_in_pool
+            if not is_dust(sum(user_balance.values()), token_decimal=18):
+                active_balances[str(addr)] = user_balance
+
+        active_balances_block = {current_block: active_balances}
+
+        logging.info(
+            f"Total num participants in pool history: {len(active_balances)}"
+        )
+        logging.info("Cacheing data ...")
+        cache_positions(active_balances_block, args.cache_filename)
+
+        # adjust from_block to current_block
+        from_block = current_block
+
+        logging.info("Disconnecting Brownie")
+        brownie.network.disconnect()
+
+        logging.info(f"Sleeping for {args.sleep_time_seconds} seconds.")
+        time.sleep(args.sleep_time_seconds)
 
 
 if __name__ == "__main__":

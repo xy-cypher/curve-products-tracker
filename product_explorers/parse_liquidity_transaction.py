@@ -1,6 +1,6 @@
 import argparse
 
-from src.core.operations.get_lp_txes import get_mint_txes
+from src.core.operations.get_lp_txes import get_mint_or_burn_txs
 from src.core.operations.read_liquidity_transaction import (
     get_liquidity_moved_for_tx,
 )
@@ -41,10 +41,11 @@ def main():
     # connect to custom note provider in args
     connect(args.node_provider_https)
 
-    added_liquidity_txes = get_mint_txes(
+    added_liquidity_txes = get_mint_or_burn_txs(
         user_address=args.address,
         token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
         from_block=TRICRYPTO_V2.contract.genesis_block,
+        tx_type="mint",
     )
 
     if not added_liquidity_txes:
