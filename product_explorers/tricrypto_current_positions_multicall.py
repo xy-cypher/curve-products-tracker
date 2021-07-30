@@ -1,10 +1,6 @@
 import argparse
 import json
 
-from brownie import web3
-from brownie.network import disconnect
-from pandas import DataFrame
-
 from src.core.operations.get_position_multicall import (
     CurvePositionCalculatorMultiCall,
 )
