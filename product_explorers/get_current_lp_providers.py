@@ -129,7 +129,7 @@ def main():
         try:
 
             historical_txes = get_all_txes(
-                start_block=from_block - 6006000,
+                start_block=from_block,
                 end_block=current_block,
                 address=pool_token_contract.address,
             )
