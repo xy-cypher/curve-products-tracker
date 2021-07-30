@@ -1,21 +1,19 @@
 import logging
-from datetime import datetime
+from typing import Any
+from typing import Dict
 from typing import List
-from typing import Optional
 
-import pytz
-from brownie import web3
+import brownie
 
 from src.core.datastructures.current_position import Position
 from src.core.datastructures.tokens import Token
 from src.core.products_factory import Product
-from src.core.sanity_check.check_value import is_dust
 from src.utils.contract_utils import init_contract
 
 logging.getLogger(__name__)
 
 
-class CurvePositionCalculator:
+class CurvePositionCalculatorMultiCall:
     def __init__(
         self,
         product: Product,
@@ -75,92 +73,49 @@ class CurvePositionCalculator:
 
         logging.info("... done!")
 
-    def get_token_and_gauge_bal(
-        self, lp_addresses: List[str], block_number: int
-    ) -> dict:
-        """We calculate position on the following token balance:
-        (tokens in gauge + free lp tokens)
+    def get_position(self, lp_balances: dict, block_identifier: int) -> list:
 
-        :param block_number:
-        :param lp_addresses: web3 address of the lp
-        :return:
-        """
-        token_balances = {}
-
-        # liquidity pool token balances
-
-        try:
-            pool_token_balance = self.pool_token_contract[
-                "contract"
-            ].balanceOf(lp_addresses, block_identifier=block_number)
-            if is_dust(
-                pool_token_balance, self.pool_token_contract["decimals"]
-            ):
-                pool_token_balance = 0
-        except ValueError:
-            pool_token_balance = 0
-
-        token_balances["liquidity_pool"] = pool_token_balance
-
-        # gauge token balances
-        for name, gauge in self.gauge_contracts.items():
-            if not gauge["contract"]:
-                continue
-            try:
-                token_balance = gauge["contract"].balanceOf(
-                    lp_addresses, block_identifier=block_number
-                )
-                if is_dust(token_balance, gauge["decimals"]):
-                    token_balance = 0
-            except ValueError:
-                token_balance = 0
-            token_balances[name] = token_balance
-
-        return token_balances
-
-    def get_position(
-        self,
-        lp_addresses: List[str],
-        block_number: Optional[int],
-    ) -> Position:
-
-        platform_token_balances = self.get_token_and_gauge_bal(
-            lp_addresses=lp_addresses, block_number=block_number
-        )
-        token_balance_to_calc_on = sum(platform_token_balances.values())
-
-        if not token_balance_to_calc_on:
-            return Position(block_number=block_number)
-
-        current_position_of_tokens = []
+        current_position_of_tokens = {}
         for asset_idx, asset in enumerate(self.lp_assets):
 
             # calculate how many tokens the user would get if they withdrew
             # all of their liquidity in a single coin.
-            num_tokens = self.pool_contract.calc_withdraw_one_coin(
-                token_balance_to_calc_on,
-                asset_idx,
-                block_identifier=block_number,
-            )
+            with brownie.multicall(
+                address=self.pool_contract.address,
+                block_identifier=block_identifier,
+            ):
+                num_tokens = [
+                    self.pool_contract.calc_withdraw_one_coin(
+                        lp_balance,
+                        asset_idx,
+                    )
+                    for addr, lp_balance in lp_balances.items()
+                ]
 
-            num_tokens_float = num_tokens / 10 ** asset["decimals"]
+            num_tokens_float = [
+                num_tokens_user / 10 ** asset["decimals"]
+                for num_tokens_user in num_tokens
+            ]
+            current_position_of_tokens[asset["name"]] = num_tokens_float
 
-            current_position_of_tokens.append(
-                Token(
-                    name=asset["name"],
-                    address=asset["contract"].address,
-                    num_tokens=num_tokens_float,
-                ),
-            )
-
-        platform_token_balances.update(
-            (x, y / 10 ** self.pool_token_contract["decimals"])
-            for x, y in platform_token_balances.items()
-        )
-        position_data = Position(
-            block_number=block_number,
-            token_balances=platform_token_balances,
-            tokens=current_position_of_tokens,
+        user_positions = self.__groom_user_positions(
+            user_addrs=lp_balances.keys(),
+            current_positions=current_position_of_tokens,
         )
 
-        return position_data
+        return user_positions
+
+    @staticmethod
+    def __groom_user_positions(
+        user_addrs: Any, current_positions: Dict
+    ) -> Dict:
+
+        user_positions = {}
+        for idx, addr in enumerate(user_addrs):
+            user_position = {}
+            for asset, positions in current_positions.items():
+                user_position[asset] = positions[idx]
+
+            user_positions[addr] = user_position
+
+        return user_positions

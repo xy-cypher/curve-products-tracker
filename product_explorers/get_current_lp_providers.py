@@ -3,6 +3,7 @@ import json
 
 import brownie
 
+from src.core.sanity_check.check_value import is_dust
 from src.utils.contract_utils import get_all_txes
 from src.utils.contract_utils import init_contract
 from src.utils.network_utils import connect
@@ -81,7 +82,9 @@ def main():
         if not staking_contract:
             continue
 
-        with brownie.multicall(address=staking_contract.address):
+        with brownie.multicall(
+            address=staking_contract.address, block_identifier=current_block
+        ):
             balances = [
                 staking_contract.balanceOf(addr)
                 for addr in participating_addrs
@@ -102,12 +105,14 @@ def main():
             )
             if user_balance_in_pool:
                 user_balance[str(pool_addr)] = user_balance_in_pool
-        if sum(user_balance.values()):
+        if not is_dust(sum(user_balance.values()), token_decimal=18):
             active_balances[str(addr)] = user_balance
+
+    active_balances_block = {current_block: active_balances}
 
     print("Total num participants in pool history: ", len(active_balances))
     with open("../data/pool_participants.json", "w") as f:
-        json.dump(active_balances, f, indent=4)
+        json.dump(active_balances_block, f, indent=4)
 
 
 if __name__ == "__main__":
