@@ -70,7 +70,7 @@ class CurvePositionCalculatorMultiCall:
 
         logging.info("... done!")
 
-    def get_position(self, lp_balances: dict, block_identifier: int) -> list:
+    def get_position(self, lp_balances: dict, block_identifier: int) -> dict:
 
         current_position_of_tokens = {}
         for asset_idx, asset in enumerate(self.lp_assets):
@@ -79,12 +79,12 @@ class CurvePositionCalculatorMultiCall:
             # all of their liquidity in a single coin.
             with brownie.multicall(
                 address=self.pool_contract.address,
-                block_identifier=block_identifier,
             ):
                 num_tokens = [
                     self.pool_contract.calc_withdraw_one_coin(
                         lp_balance,
                         asset_idx,
+                        block_identifier=block_identifier,
                     )
                     for addr, lp_balance in lp_balances.items()
                 ]
@@ -102,22 +102,44 @@ class CurvePositionCalculatorMultiCall:
 
         return block_positions
 
-    def get_oracle_prices_dict(self):
+    def get_oracle_prices_dict(self, block_identifier: int):
 
-        oracle_prices = {}
+        oracle_prices_dict = {}
         n_coin = 0
+        n_coins_query = []
         for asset in self.lp_assets:
             if asset["name"] == "Tether USD":
+                oracle_prices_dict[asset["asset"]] = 1
                 continue
-            oracle_prices[asset["name"]] = (
-                self.pool_contract.price_oracle(n_coin) / 10 ** 18
-            )
+            oracle_prices_dict[asset["name"]] = None
+            n_coin.append(n_coin)
             n_coin += 1
 
-        return oracle_prices
+        with brownie.multicall(
+            address=self.pool_contract.address,
+        ):
+            oracle_prices = [
+                self.pool_contract.price_oracle(
+                    coin_index, block_identifier=block_identifier
+                )
+                / 10 ** 18
+                for coin_index in n_coins_query
+            ]
 
+        n_coin = 0
+        for key in oracle_prices_dict.keys():
+
+            if not oracle_prices_dict[key]:
+                continue
+
+            oracle_prices_dict[key] = oracle_prices[n_coin]
+            n_coin += 1
+
+        return oracle_prices_dict
+
+    @staticmethod
     def __groom_user_positions(
-        self, user_addrs: Any, current_positions: Dict
+        user_addrs: Any, current_positions: Dict
     ) -> Dict:
 
         user_positions = {}
@@ -128,11 +150,4 @@ class CurvePositionCalculatorMultiCall:
 
             user_positions[addr] = user_position
 
-        asset_oracle_prices = self.get_oracle_prices_dict()
-
-        block_data = {
-            "price_oracle": asset_oracle_prices,
-            "positions": user_positions,
-        }
-
-        return block_data
+        return user_positions
