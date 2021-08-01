@@ -2,8 +2,10 @@ import argparse
 import logging
 import os
 import time
+from datetime import datetime
 
 import brownie.network
+from brownie.network.contract import Contract
 from etherscan.client import EmptyResponse
 
 from src.core.operations.current_block import get_block_info
@@ -67,15 +69,13 @@ def main():
     # connect to custom note provider in args
     connect(args.node_provider_https)
 
-    # initialise tricrypto calculator
-    tricrypto_calculator = CurvePositionCalculatorMultiCall(TRICRYPTO_V2)
-
     staking_contracts = [
-        tricrypto_calculator.pool_token_contract["contract"],
-        tricrypto_calculator.gauge_contracts["curve_gauge"]["contract"],
-        tricrypto_calculator.gauge_contracts["convex_gauge"]["contract"],
+        Contract(TRICRYPTO_V2.token_contracts["crv3crypto"].addr),
+        Contract(TRICRYPTO_V2.other_contracts["curve_gauge"].addr),
     ]
 
+    # initialise tricrypto
+    tricrypto_calculator = CurvePositionCalculatorMultiCall(TRICRYPTO_V2)
     from_block = TRICRYPTO_V2.contract.genesis_block
     to_block = from_block  # initialisation
     steps = args.block_steps
@@ -100,9 +100,7 @@ def main():
             historical_txes = get_all_txes(
                 start_block=from_block,
                 end_block=current_block,
-                address=tricrypto_calculator.pool_token_contract[
-                    "contract"
-                ].address,
+                address=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
             )
 
         except EmptyResponse:
@@ -136,9 +134,12 @@ def main():
 
         # get block positions
         logging.info("calculating underlying tokens")
+
+        start_time = datetime.now()
         block_position = tricrypto_calculator.get_position(
             lp_balances=aggregated_positions, block_identifier=int(to_block)
         )
+        logging.info(f"time taken: {datetime.now() - start_time}")
 
         # cache positions for block
         logging.info("cacheing output")

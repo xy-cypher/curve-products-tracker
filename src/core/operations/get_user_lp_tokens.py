@@ -1,8 +1,12 @@
+import logging
+from datetime import datetime
 from typing import List
 
 import brownie
 
 from src.core.sanity_check.check_value import is_dust
+
+logging.getLogger(__name__)
 
 
 def get_lp_tokens_of_users(
@@ -13,14 +17,14 @@ def get_lp_tokens_of_users(
         if not staking_contract:
             continue
 
-        with brownie.multicall(address=staking_contract.address):
+        start_time = datetime.now()
+        with brownie.multicall(block_identifier=block_identifier):
             balances = [
-                staking_contract.balanceOf(
-                    addr, block_identifier=block_identifier
-                )
+                staking_contract.balanceOf(addr)
                 for addr in participating_addrs
             ]
-            user_balance = dict(zip(participating_addrs, balances))
+        logging.info(f"time taken: {datetime.now() - start_time}")
+        user_balance = dict(zip(participating_addrs, balances))
         active_user_balance[staking_contract.address] = user_balance
 
     # get all participants with non-zero balances in any of the three
