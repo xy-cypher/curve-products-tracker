@@ -6,6 +6,7 @@ from datetime import datetime
 
 import brownie.network
 from brownie.network.contract import Contract
+from eth_abi.exceptions import InsufficientDataBytes
 from etherscan.client import EmptyResponse
 
 from src.core.operations.current_block import get_block_info
@@ -69,10 +70,11 @@ def main():
     # connect to custom note provider in args
     connect(args.node_provider_https)
 
-    staking_contracts = [
+    all_staking_contracts = [
         Contract(TRICRYPTO_V2.token_contracts["crv3crypto"].addr),
         Contract(TRICRYPTO_V2.other_contracts["curve_gauge"].addr),
     ]
+    staking_contracts = []
 
     # initialise tricrypto
     tricrypto_calculator = CurvePositionCalculatorMultiCall(TRICRYPTO_V2)
@@ -91,6 +93,16 @@ def main():
             logging.info(f"Reached max block height {current_block}")
             to_block = current_block
             sleep_time = SLEEP_TIME  # longer sleep time.
+
+        # only search in staking contracts that existed:
+        with brownie.multicall(block_identifier=to_block):
+            for i in all_staking_contracts:
+                if i not in staking_contracts:
+                    try:
+                        _ = i.name.call()
+                        staking_contracts.append(i)
+                    except ValueError:
+                        logging.info(f"Contract {i} wasn't created yet.")
 
         logging.info(f"Fetching Txes between {from_block} : {current_block}")
 
