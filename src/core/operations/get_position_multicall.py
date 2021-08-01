@@ -1,14 +1,13 @@
 import logging
+from datetime import datetime
 from typing import Any
 from typing import Dict
-from typing import List
 
 import brownie
+from brownie.network.contract import Contract
 
-from src.core.datastructures.current_position import Position
-from src.core.datastructures.tokens import Token
 from src.core.products_factory import Product
-from src.utils.contract_utils import init_contract
+
 
 logging.getLogger(__name__)
 
@@ -19,69 +18,69 @@ class CurvePositionCalculatorMultiCall:
         product: Product,
     ):
 
-        logging.info("Initialising Position Calculator ...")
+        with brownie.multicall:
+            logging.info("Initialising Position Calculator ...")
 
-        # todo: initialise using poolinfo or pool config yaml file
+            # todo: initialise using poolinfo or pool config yaml file
 
-        self.pool_contract = init_contract(product.contract.addr)
+            self.pool_contract = Contract(product.contract.addr)
 
-        # initialise pool token contracts
-        if len(product.token_contracts.items()) != 1:
-            raise  # there should only be 1 token contract
-        self.pool_token_contract = {}
-        for token_name, info in product.token_contracts.items():
+            # initialise pool token contracts
+            if len(product.token_contracts.items()) != 1:
+                raise  # there should only be 1 token contract
+            self.pool_token_contract = {}
+            for token_name, info in product.token_contracts.items():
 
-            token_contract = init_contract(info.addr)
-            self.pool_token_contract = {
-                "contract": token_contract,
-                "decimals": token_contract.decimals(),
-            }
+                token_contract = Contract(info.addr)
+                self.pool_token_contract = {
+                    "contract": token_contract,
+                    "decimals": token_contract.decimals(),
+                }
 
-        # initialise underlying assets info
-        self.lp_assets = []
-        for i in range(100):
-            try:
-                asset_addr = self.pool_contract.coins(i)
-                asset_contract = init_contract(asset_addr)
+            # initialise underlying assets info
+            self.lp_assets = []
+
+            asset_addrs = [self.pool_contract.coins(i) for i in range(10)]
+            asset_addrs = [i for i in asset_addrs if i]
+            for asset_addr in asset_addrs:
+                asset_contract = Contract(asset_addr)
                 asset_decimals = asset_contract.decimals()
                 asset_name = asset_contract.name()
                 self.lp_assets.append(
                     {
-                        "name": asset_name,
+                        "name": str(asset_name),
                         "contract": asset_contract,
-                        "decimals": asset_decimals,
+                        "decimals": int(asset_decimals),
                     }
                 )
-            except ValueError:  # max index reached
-                break
 
-        # initialise auxiliary contracts:
-        # NOTE: gauge tokens have the same decimals as lp tokens
-        self.gauge_contracts = {}
-        for contract_name, contract in product.other_contracts.items():
+            # initialise auxiliary contracts:
+            # NOTE: gauge tokens have the same decimals as lp tokens
+            self.gauge_contracts = {}
+            for contract_name, contract in product.other_contracts.items():
 
-            contract_name: str = contract_name
-            gauge_contract = None
-            decimals = None
-            if contract.addr:
-                gauge_contract = init_contract(contract.addr)
-                decimals = self.pool_token_contract["decimals"]
+                contract_name: str = contract_name
+                gauge_contract = None
+                decimals = None
+                if contract.addr:
+                    gauge_contract = Contract(contract.addr)
+                    decimals = self.pool_token_contract["decimals"]
 
-            gauge = {"contract": gauge_contract, "decimals": decimals}
+                gauge = {"contract": gauge_contract, "decimals": decimals}
 
-            self.gauge_contracts[contract_name] = gauge
+                self.gauge_contracts[contract_name] = gauge
 
         logging.info("... done!")
 
-    def get_position(self, lp_balances: dict, block_identifier: int) -> list:
+    def get_position(self, lp_balances: dict, block_identifier: int) -> dict:
 
         current_position_of_tokens = {}
         for asset_idx, asset in enumerate(self.lp_assets):
 
             # calculate how many tokens the user would get if they withdrew
             # all of their liquidity in a single coin.
+            time_start = datetime.now()
             with brownie.multicall(
-                address=self.pool_contract.address,
                 block_identifier=block_identifier,
             ):
                 num_tokens = [
@@ -91,19 +90,54 @@ class CurvePositionCalculatorMultiCall:
                     )
                     for addr, lp_balance in lp_balances.items()
                 ]
+            logging.info(f"Time elapsed: {datetime.now()-time_start}")
 
             num_tokens_float = [
-                num_tokens_user / 10 ** asset["decimals"]
+                int(num_tokens_user) / 10 ** asset["decimals"]
+                if num_tokens_user
+                else "Error"
                 for num_tokens_user in num_tokens
             ]
             current_position_of_tokens[asset["name"]] = num_tokens_float
 
-        user_positions = self.__groom_user_positions(
+        block_positions = self.__groom_user_positions(
             user_addrs=lp_balances.keys(),
             current_positions=current_position_of_tokens,
         )
 
-        return user_positions
+        return block_positions
+
+    def get_oracle_prices_dict(self, block_identifier: int):
+
+        oracle_prices_dict = {}
+        n_coin = 0
+        n_coins_query = []
+        for asset in self.lp_assets:
+            if asset["name"] == "Tether USD":
+                oracle_prices_dict[asset["asset"]] = 1
+                continue
+            oracle_prices_dict[asset["name"]] = None
+            n_coin.append(n_coin)
+            n_coin += 1
+
+        with brownie.multicall(
+            block_identifier=block_identifier,
+        ):
+            oracle_prices = [
+                self.pool_contract.price_oracle(coin_index) / 10 ** 18
+                for coin_index in n_coins_query
+            ]
+
+        n_coin = 0
+        for key in oracle_prices_dict.keys():
+
+            if not oracle_prices_dict[key]:
+                continue
+
+            oracle_prices_dict[key] = oracle_prices[n_coin]
+            n_coin += 1
+
+        return oracle_prices_dict
 
     @staticmethod
     def __groom_user_positions(
