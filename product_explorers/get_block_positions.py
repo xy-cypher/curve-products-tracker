@@ -10,6 +10,7 @@ from eth_abi.exceptions import InsufficientDataBytes
 from etherscan.client import EmptyResponse
 
 from src.core.operations.current_block import get_block_info
+from src.core.operations.get_lp_txes import get_lp_asset_transfers
 from src.core.operations.get_position_multicall import (
     CurvePositionCalculatorMultiCall,
 )
@@ -109,21 +110,12 @@ def main():
 
         # get addresses of active participants
         logging.info(f"Fetching Txes between {from_block} : {current_block}")
-        try:
-
-            # todo: etherscan tx queries cap at 10,000 txes! need a fix for this.
-            historical_txes = get_all_txes(
-                start_block=from_block,
-                end_block=current_block,
-                address=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
-            )
-
-        except EmptyResponse:
-
-            continue
-
+        historical_txes = get_lp_asset_transfers(
+            from_block=from_block,
+            token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
+        )
         logging.info(
-            f"... done! Number of transactions: {len(historical_txes)}"
+            f"... done! Num lp token txes: {len(historical_txes)}"
         )
         current_liquidity_providers = list(
             set([i["from"] for i in historical_txes])
