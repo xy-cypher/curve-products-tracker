@@ -7,10 +7,8 @@ from datetime import datetime
 import brownie.network
 from brownie.network.contract import Contract
 from eth_abi.exceptions import InsufficientDataBytes
-from etherscan.client import EmptyResponse
 
 from src.core.operations.current_block import get_block_info
-from src.core.operations.get_lp_txes import get_lp_asset_transfers
 from src.core.operations.get_position_multicall import (
     CurvePositionCalculatorMultiCall,
 )
@@ -71,17 +69,18 @@ def main():
     # connect to custom note provider in args
     connect(args.node_provider_https)
 
-    all_staking_contracts = [
+    staking_contracts = [
         Contract(TRICRYPTO_V2.token_contracts["crv3crypto"].addr),
         Contract(TRICRYPTO_V2.other_contracts["curve_gauge"].addr),
+        Contract(TRICRYPTO_V2.other_contracts["convex_gauge"].addr),
     ]
-    staking_contracts = []
 
     # initialise tricrypto
     tricrypto_calculator = CurvePositionCalculatorMultiCall(TRICRYPTO_V2)
     from_block = TRICRYPTO_V2.contract.genesis_block
-    to_block = from_block  # initialisation
+
     steps = args.block_steps
+    to_block = from_block + steps  # initialisation
     sleep_time = 1
 
     while True:
@@ -92,33 +91,25 @@ def main():
         logging.info(f"Current block: {current_block}")
 
         # set longer sleep time if reached current block
-        to_block = to_block + steps
         if to_block > current_block:
             logging.info(f"Reached max block height {current_block}")
             to_block = current_block
             sleep_time = SLEEP_TIME  # longer sleep time.
 
-        # only search in staking contracts that existed:
-        with brownie.multicall(block_identifier=to_block):
-            for i in all_staking_contracts:
-                if i not in staking_contracts:
-                    try:
-                        _ = i.name.call()
-                        staking_contracts.append(i)
-                    except ValueError:
-                        logging.info(f"Contract {i} wasn't created yet.")
-
         # get addresses of active participants
         logging.info(f"Fetching Txes between {from_block} : {current_block}")
-        historical_txes = get_lp_asset_transfers(
-            from_block=from_block,
-            token_addr=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
+        historical_txes = get_all_txes(
+            address=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
         )
-        logging.info(
-            f"... done! Num lp token txes: {len(historical_txes)}"
-        )
+        logging.info(f"... done! Num lp token txes: {len(historical_txes)}")
+        from_addresses = [i["from"] for i in historical_txes]
+        to_addresses = [i["to"] for i in historical_txes]
+        all_addreses = from_addresses + to_addresses
+        all_unique_participants = list(set(all_addreses))
+
+        # remove zero addr
         current_liquidity_providers = list(
-            set([i["from"] for i in historical_txes])
+            filter(None, all_unique_participants)
         )
 
         # connect to brownie if not connected
@@ -127,25 +118,26 @@ def main():
 
         # get active balances
         logging.info("Fetching active balances")
-        try:
-            active_balances = get_lp_tokens_of_users(
-                participating_addrs=current_liquidity_providers,
-                staking_contracts=staking_contracts,
-                block_identifier=to_block,
-            )
+        while True:
 
-            # keep steps to initialised block steps
-            if not steps == args.block_steps:
-                logging.info(
-                    "Re-initialising block_steps as it was previously bumped"
+            try:
+
+                active_balances = get_lp_tokens_of_users(
+                    participating_addrs=current_liquidity_providers,
+                    staking_contracts=staking_contracts,
+                    block_identifier=to_block,
                 )
-                steps = args.block_steps
+                break
 
-        except InsufficientDataBytes:
-            logging.warning(
-                "InsufficientDataBytes encountered. Bumping block_steps by 100"
-            )
-            steps += 100
+            except InsufficientDataBytes:
+
+                logging.warning(
+                    "InsufficientDataBytes encountered: "
+                    "retrying with 10 block steps ahead"
+                )
+                to_block = to_block + steps + 10
+
+                continue
 
         # aggregate positions to get total lp tokens
         logging.info("aggregating positions")
@@ -157,7 +149,7 @@ def main():
         logging.info("calculating underlying tokens")
         start_time = datetime.now()
         block_position = tricrypto_calculator.get_position(
-            lp_balances=aggregated_positions, block_identifier=int(to_block)
+            lp_balances=aggregated_positions, block_identifier=to_block
         )
         logging.info(f"time taken: {datetime.now() - start_time}")
 
@@ -168,6 +160,9 @@ def main():
 
         # disconnect_brownie
         brownie.network.disconnect()
+
+        # all steps succeeded! we can step up now
+        to_block = to_block + steps
 
         logging.info(f"sleeping for {sleep_time} seconds \n")
         time.sleep(sleep_time)

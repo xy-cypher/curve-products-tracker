@@ -83,13 +83,16 @@ class CurvePositionCalculatorMultiCall:
             with brownie.multicall(
                 block_identifier=block_identifier,
             ):
-                num_tokens = [
-                    self.pool_contract.calc_withdraw_one_coin(
-                        lp_balance,
-                        asset_idx,
+                num_tokens = []
+                for idx, (addr, lp_balance) in enumerate(lp_balances.items()):
+
+                    num_tokens.append(
+                        self.pool_contract.calc_withdraw_one_coin(
+                            lp_balance,
+                            asset_idx,
+                        )
                     )
-                    for addr, lp_balance in lp_balances.items()
-                ]
+
             logging.info(f"Time elapsed: {datetime.now()-time_start}")
 
             num_tokens_float = [

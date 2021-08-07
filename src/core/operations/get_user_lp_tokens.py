@@ -20,15 +20,17 @@ def get_lp_tokens_of_users(
         if not staking_contract:
             continue
 
+        balances = []
         start_time = datetime.now()
         with brownie.multicall(block_identifier=block_identifier):
-            balances = [
-                int(staking_contract.balanceOf(addr))
-                for addr in participating_addrs
-            ]
+
+            for idx, addr in enumerate(participating_addrs):
+
+                balances.append(staking_contract.balanceOf(addr))
 
         logging.info(f"time taken: {datetime.now() - start_time}")
 
+        balances = [int(i) for i in balances]  # convert LazyResult objects
         user_balance = dict(zip(participating_addrs, balances))
         active_user_balance[staking_contract.address] = user_balance
 
