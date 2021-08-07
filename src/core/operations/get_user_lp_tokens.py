@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List
 
 import brownie
-from eth_abi.exceptions import InsufficientDataBytes
 
 from src.core.sanity_check.check_value import is_dust
 
@@ -11,26 +10,25 @@ logging.getLogger(__name__)
 
 
 def get_lp_tokens_of_users(
-    participating_addrs: List, staking_contracts: List, block_identifier: int
+    participating_addrs: List,
+    staking_contracts: List,
+    block_identifier: int,
 ):
     active_user_balance = {}
     for staking_contract in staking_contracts:
+
         if not staking_contract:
             continue
 
         start_time = datetime.now()
         with brownie.multicall(block_identifier=block_identifier):
-            balances = []
-            for idx, addr in enumerate(participating_addrs):
-
-                try:
-                    balance = staking_contract.balanceOf(str(addr))
-                except Exception as e:
-                    logging.warning(f"Issue with user {addr}: {e}")
-                    balance = 0
-                balances.append(balance)
+            balances = [
+                int(staking_contract.balanceOf(addr))
+                for addr in participating_addrs
+            ]
 
         logging.info(f"time taken: {datetime.now() - start_time}")
+
         user_balance = dict(zip(participating_addrs, balances))
         active_user_balance[staking_contract.address] = user_balance
 

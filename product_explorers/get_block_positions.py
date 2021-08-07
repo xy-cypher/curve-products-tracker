@@ -85,9 +85,12 @@ def main():
 
     while True:
 
+        # get block number (this uses a free api). can do with brownie but
+        # why rpc call when you can avoid it?
         current_block = int(get_block_info()["height"])
         logging.info(f"Current block: {current_block}")
 
+        # set longer sleep time if reached current block
         to_block = to_block + steps
         if to_block > current_block:
             logging.info(f"Reached max block height {current_block}")
@@ -104,8 +107,8 @@ def main():
                     except ValueError:
                         logging.info(f"Contract {i} wasn't created yet.")
 
+        # get addresses of active participants
         logging.info(f"Fetching Txes between {from_block} : {current_block}")
-
         try:
 
             # todo: etherscan tx queries cap at 10,000 txes! need a fix for this.
@@ -132,11 +135,25 @@ def main():
 
         # get active balances
         logging.info("Fetching active balances")
-        active_balances = get_lp_tokens_of_users(
-            participating_addrs=current_liquidity_providers,
-            staking_contracts=staking_contracts,
-            block_identifier=to_block,
-        )
+        try:
+            active_balances = get_lp_tokens_of_users(
+                participating_addrs=current_liquidity_providers,
+                staking_contracts=staking_contracts,
+                block_identifier=to_block,
+            )
+
+            # keep steps to initialised block steps
+            if not steps == args.block_steps:
+                logging.info(
+                    "Re-initialising block_steps as it was previously bumped"
+                )
+                steps = args.block_steps
+
+        except InsufficientDataBytes:
+            logging.warning(
+                "InsufficientDataBytes encountered. Bumping block_steps by 100"
+            )
+            steps += 100
 
         # aggregate positions to get total lp tokens
         logging.info("aggregating positions")
@@ -146,7 +163,6 @@ def main():
 
         # get block positions
         logging.info("calculating underlying tokens")
-
         start_time = datetime.now()
         block_position = tricrypto_calculator.get_position(
             lp_balances=aggregated_positions, block_identifier=int(to_block)
@@ -161,7 +177,7 @@ def main():
         # disconnect_brownie
         brownie.network.disconnect()
 
-        logging.info(f"sleeping for {sleep_time} seconds")
+        logging.info(f"sleeping for {sleep_time} seconds \n")
         time.sleep(sleep_time)
 
 

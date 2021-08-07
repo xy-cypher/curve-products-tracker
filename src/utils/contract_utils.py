@@ -76,13 +76,24 @@ class TransactionScraper(Account):
 
 
 def get_all_txes(
-    address: str, start_block: int = 0, end_block: Union[str, int] = "latest"
+    address: str,
+    start_block: int = 0,
+    end_block: Union[str, int] = "latest",
+    max_txns: int = 1000,  # todo: make this 10,000 later
 ) -> List:
 
     tx_scraper = TransactionScraper(
         address=address, api_key=os.environ["ETHERSCAN_API_KEY"]
     )
 
-    # todo: intervals should be segmented to 10000 block ranges
     txes = tx_scraper.get_tx(start_block=start_block, end_block=end_block)
+
+    if len(txes) == max_txns:
+
+        return txes.append(
+            get_all_txes(
+                address=address, end_block=end_block, start_block=start_block
+            )
+        )
+
     return txes
