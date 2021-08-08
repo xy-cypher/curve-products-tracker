@@ -81,6 +81,7 @@ def main():
 
     steps = args.block_steps
     to_block = from_block + steps  # initialisation
+    extra_steps_if_error = 100
     sleep_time = 1
 
     while True:
@@ -132,10 +133,10 @@ def main():
             except InsufficientDataBytes:
 
                 logging.warning(
-                    "InsufficientDataBytes encountered: "
-                    "retrying with 10 block steps ahead"
+                    f"InsufficientDataBytes encountered: "
+                    f"retrying with {extra_steps_if_error} block steps ahead"
                 )
-                to_block = to_block + steps + 10
+                to_block = to_block + steps + extra_steps_if_error
 
                 continue
 

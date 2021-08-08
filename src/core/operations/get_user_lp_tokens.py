@@ -5,6 +5,7 @@ from typing import List
 import brownie
 
 from src.core.sanity_check.check_value import is_dust
+from src.utils.misc_utils import chunk_list
 
 logging.getLogger(__name__)
 
@@ -14,19 +15,29 @@ def get_lp_tokens_of_users(
     staking_contracts: List,
     block_identifier: int,
 ):
+
+    # only search in staking contracts that existed:
+    active_staking_pools = []
+    with brownie.multicall(block_identifier=block_identifier):
+        for i in staking_contracts:
+            try:
+                _ = i.name.call()
+                active_staking_pools.append(i)
+            except (ValueError, AttributeError):
+                logging.info(f"Contract {i} wasn't created yet.")
+
     active_user_balance = {}
-    for staking_contract in staking_contracts:
+    for staking_contract in active_staking_pools:
 
         if not staking_contract:
             continue
 
         balances = []
         start_time = datetime.now()
-        with brownie.multicall(block_identifier=block_identifier):
-
-            for idx, addr in enumerate(participating_addrs):
-
-                balances.append(staking_contract.balanceOf(addr))
+        for chunk in chunk_list(participating_addrs):
+            with brownie.multicall(block_identifier=block_identifier):
+                for idx, addr in enumerate(chunk):
+                    balances.append(staking_contract.balanceOf(addr))
 
         logging.info(f"time taken: {datetime.now() - start_time}")
 
