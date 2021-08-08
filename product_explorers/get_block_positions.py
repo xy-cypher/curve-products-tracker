@@ -8,7 +8,6 @@ import brownie.network
 from brownie.network.contract import Contract
 from eth_abi.exceptions import InsufficientDataBytes
 
-from src.core.operations.current_block import get_block_info
 from src.core.operations.get_position_multicall import (
     CurvePositionCalculatorMultiCall,
 )
@@ -88,7 +87,7 @@ def main():
 
         # get block number (this uses a free api). can do with brownie but
         # why rpc call when you can avoid it?
-        current_block = int(get_block_info()["height"])
+        current_block = brownie.chain.height
         logging.info(f"Current block: {current_block}")
 
         # set longer sleep time if reached current block
