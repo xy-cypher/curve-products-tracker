@@ -1,7 +1,7 @@
 import os
+from itertools import islice
 
 import web3
-
 
 w3_infura = web3.Web3(
     web3.Web3.HTTPProvider(
@@ -37,3 +37,15 @@ def parse_value(val):
         return val.hex()
     else:
         return val
+
+
+def chunk_list(data, SIZE=1000):
+    it = iter(data)
+    for i in range(0, len(data), SIZE):
+        yield [k for k in islice(it, SIZE)]
+
+
+def chunk_dict(data, SIZE=1000):
+    it = iter(data)
+    for i in range(0, len(data), SIZE):
+        yield {k: data[k] for k in islice(it, SIZE)}

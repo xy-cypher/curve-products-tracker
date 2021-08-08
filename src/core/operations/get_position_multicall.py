@@ -7,7 +7,7 @@ import brownie
 from brownie.network.contract import Contract
 
 from src.core.products_factory import Product
-
+from src.utils.misc_utils import chunk_dict
 
 logging.getLogger(__name__)
 
@@ -80,22 +80,25 @@ class CurvePositionCalculatorMultiCall:
             # calculate how many tokens the user would get if they withdrew
             # all of their liquidity in a single coin.
             time_start = datetime.now()
-            with brownie.multicall(
-                block_identifier=block_identifier,
-            ):
-                num_tokens = [
-                    self.pool_contract.calc_withdraw_one_coin(
-                        lp_balance,
-                        asset_idx,
-                    )
-                    for addr, lp_balance in lp_balances.items()
-                ]
+            num_tokens = []
+            for chunk in chunk_dict(lp_balances):  # chunk to avoid OOG errors
+                with brownie.multicall(
+                    block_identifier=block_identifier,
+                ):
+                    for idx, (addr, lp_balance) in enumerate(chunk.items()):
+                        num_tokens.append(
+                            self.pool_contract.calc_withdraw_one_coin(
+                                lp_balance,
+                                asset_idx,
+                            )
+                        )
+
             logging.info(f"Time elapsed: {datetime.now()-time_start}")
 
             num_tokens_float = [
                 int(num_tokens_user) / 10 ** asset["decimals"]
                 if num_tokens_user
-                else "Error"
+                else "Error"  # something went wrong so we explicitly store error
                 for num_tokens_user in num_tokens
             ]
             current_position_of_tokens[asset["name"]] = num_tokens_float

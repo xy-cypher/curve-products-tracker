@@ -50,7 +50,10 @@ TRICRYPTO_V2 = Product(
             name="TriCrypto v2 Curve Gauge",
             addr="0xDeFd8FdD20e0f34115C7018CCfb655796F6B2168",
         ),
-        "convex_gauge": ContractInfo(),  # No contracts yet
+        "convex_gauge": ContractInfo(
+            name="TriCrypto v2 Convex Gauge",
+            addr="0x9D5C5E364D81DaB193b72db9E9BE9D8ee669B652",
+        ),  # No contracts yet
     },
 )
 

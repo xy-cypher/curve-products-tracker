@@ -6,7 +6,7 @@ from datetime import datetime
 
 import brownie.network
 from brownie.network.contract import Contract
-from etherscan.client import EmptyResponse
+from eth_abi.exceptions import InsufficientDataBytes
 
 from src.core.operations.current_block import get_block_info
 from src.core.operations.get_position_multicall import (
@@ -72,46 +72,45 @@ def main():
     staking_contracts = [
         Contract(TRICRYPTO_V2.token_contracts["crv3crypto"].addr),
         Contract(TRICRYPTO_V2.other_contracts["curve_gauge"].addr),
+        Contract(TRICRYPTO_V2.other_contracts["convex_gauge"].addr),
     ]
 
     # initialise tricrypto
     tricrypto_calculator = CurvePositionCalculatorMultiCall(TRICRYPTO_V2)
     from_block = TRICRYPTO_V2.contract.genesis_block
-    to_block = from_block  # initialisation
+
     steps = args.block_steps
+    to_block = from_block + steps  # initialisation
+    extra_steps_if_error = 100
     sleep_time = 1
 
     while True:
 
+        # get block number (this uses a free api). can do with brownie but
+        # why rpc call when you can avoid it?
         current_block = int(get_block_info()["height"])
         logging.info(f"Current block: {current_block}")
 
-        to_block = to_block + steps
+        # set longer sleep time if reached current block
         if to_block > current_block:
             logging.info(f"Reached max block height {current_block}")
             to_block = current_block
             sleep_time = SLEEP_TIME  # longer sleep time.
 
+        # get addresses of active participants
         logging.info(f"Fetching Txes between {from_block} : {current_block}")
-
-        try:
-
-            # todo: etherscan tx queries cap at 10,000 txes! need a fix for this.
-            historical_txes = get_all_txes(
-                start_block=from_block,
-                end_block=current_block,
-                address=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
-            )
-
-        except EmptyResponse:
-
-            continue
-
-        logging.info(
-            f"... done! Number of transactions: {len(historical_txes)}"
+        historical_txes = get_all_txes(
+            address=TRICRYPTO_V2.token_contracts["crv3crypto"].addr,
         )
+        logging.info(f"... done! Num lp token txes: {len(historical_txes)}")
+        from_addresses = [i["from"] for i in historical_txes]
+        to_addresses = [i["to"] for i in historical_txes]
+        all_addreses = from_addresses + to_addresses
+        all_unique_participants = list(set(all_addreses))
+
+        # remove zero addr
         current_liquidity_providers = list(
-            set([i["from"] for i in historical_txes])
+            filter(None, all_unique_participants)
         )
 
         # connect to brownie if not connected
@@ -120,11 +119,26 @@ def main():
 
         # get active balances
         logging.info("Fetching active balances")
-        active_balances = get_lp_tokens_of_users(
-            participating_addrs=current_liquidity_providers,
-            staking_contracts=staking_contracts,
-            block_identifier=to_block,
-        )
+        while True:
+
+            try:
+
+                active_balances = get_lp_tokens_of_users(
+                    participating_addrs=current_liquidity_providers,
+                    staking_contracts=staking_contracts,
+                    block_identifier=to_block,
+                )
+                break
+
+            except InsufficientDataBytes:
+
+                logging.warning(
+                    f"InsufficientDataBytes encountered: "
+                    f"retrying with {extra_steps_if_error} block steps ahead"
+                )
+                to_block = to_block + steps + extra_steps_if_error
+
+                continue
 
         # aggregate positions to get total lp tokens
         logging.info("aggregating positions")
@@ -134,10 +148,9 @@ def main():
 
         # get block positions
         logging.info("calculating underlying tokens")
-
         start_time = datetime.now()
         block_position = tricrypto_calculator.get_position(
-            lp_balances=aggregated_positions, block_identifier=int(to_block)
+            lp_balances=aggregated_positions, block_identifier=to_block
         )
         logging.info(f"time taken: {datetime.now() - start_time}")
 
@@ -149,7 +162,10 @@ def main():
         # disconnect_brownie
         brownie.network.disconnect()
 
-        logging.info(f"sleeping for {sleep_time} seconds")
+        # all steps succeeded! we can step up now
+        to_block = to_block + steps
+
+        logging.info(f"sleeping for {sleep_time} seconds \n")
         time.sleep(sleep_time)
 
 
