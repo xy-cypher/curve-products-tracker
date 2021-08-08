@@ -87,7 +87,7 @@ def main():
 
         # get block number (this uses a free api). can do with brownie but
         # why rpc call when you can avoid it?
-        current_block = brownie.chain.height
+        current_block = brownie.web3.eth.block_number
         logging.info(f"Current block: {current_block}")
 
         # set longer sleep time if reached current block
