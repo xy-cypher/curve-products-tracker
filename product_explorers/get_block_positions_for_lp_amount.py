@@ -41,7 +41,7 @@ def parse_args():
         "--cache-dir",
         dest="cache_dir",
         type=str,
-        default="../data/block_positions",
+        default="../data/block_positions_for_amount",
     )
     parser.add_argument(
         "--node-provider-https",
@@ -60,12 +60,21 @@ def parse_args():
         type=int,
         default=1000,
     )
+    parser.add_argument(
+        "--lp-amount",
+        dest="lp_amount",
+        type=int,
+        default=100,
+    )
     return parser.parse_args()
 
 
 def main():
 
     args = parse_args()
+
+    if not os.path.exists(args.cache_dir):
+        os.mkdir(args.cache_dir)
 
     # connect to custom note provider in args
     connect(args.node_provider_https)
@@ -87,10 +96,12 @@ def main():
 
     while True:
 
-        cache_filename = os.path.join(args.cache_dir, f"{to_block}.csv")
+        cache_filename = os.path.join(
+            args.cache_dir, f"block_{to_block}_lp_amount_{args.lp_amount}.csv"
+        )
         if os.path.exists(cache_filename):
             # cache already exists. moving on...
-            to_block = to_block + steps
+            to_block += +steps
             continue
 
         # get block number (this uses a free api). can do with brownie but
@@ -149,15 +160,28 @@ def main():
 
         # aggregate positions to get total lp tokens
         logging.info("aggregating positions")
-        aggregated_positions = get_liquidity_positions_for_participants(
+        aggregated_positions_all = get_liquidity_positions_for_participants(
             active_balances
         )
+
+        # only select participants with at least 100 lp tokens
+        # also, only calculate for args.lp_tokens number of tokens
+        addr_and_positions_to_calculate_on = {}
+        for key, value in aggregated_positions_all.items():
+            if value > args.lp_amount * 1e18:
+                addr_and_positions_to_calculate_on[key] = args.lp_amount * 1e18
+
+        if not addr_and_positions_to_calculate_on:
+            # no addresses cross the threshold, so then we just move on.
+            to_block += steps
+            continue
 
         # get block positions
         logging.info("calculating underlying tokens")
         start_time = datetime.now()
         block_position = tricrypto_calculator.get_position(
-            lp_balances=aggregated_positions, block_identifier=to_block
+            lp_balances=addr_and_positions_to_calculate_on,
+            block_identifier=to_block,
         )
         logging.info(f"time taken: {datetime.now() - start_time}")
 
@@ -180,7 +204,7 @@ def main():
         brownie.network.disconnect()
 
         # all steps succeeded! we can step up now
-        to_block = to_block + steps
+        to_block += steps
 
         logging.info(f"sleeping for {sleep_time} seconds \n")
         time.sleep(sleep_time)

@@ -8,4 +8,5 @@ pycoingecko
 pytz
 redis
 requests
+seaborn
 web3

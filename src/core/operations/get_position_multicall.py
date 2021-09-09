@@ -103,6 +103,7 @@ class CurvePositionCalculatorMultiCall:
             ]
             current_position_of_tokens[asset["name"]] = num_tokens_float
 
+        current_position_of_tokens["lp_balances"] = list(lp_balances.values())
         block_positions = self.__groom_user_positions(
             user_addrs=lp_balances.keys(),
             current_positions=current_position_of_tokens,
